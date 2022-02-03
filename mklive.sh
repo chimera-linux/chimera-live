@@ -302,13 +302,13 @@ done
 msg "Generating squashfs filesystem..."
 
 umount_pseudo
+mount_hostbind
 
-gensquashfs --pack-dir "${ROOT_DIR}" -c xz "${LIVE_DIR}/filesystem.squashfs"
+chroot "${HOST_DIR}" gensquashfs --pack-dir "/build/rootfs" -c xz \
+    "/build/image/live/filesystem.squashfs"
 
 # generate iso image
 msg "Generating ISO image..."
-
-mount_hostbind
 
 generate_iso_base() {
     chroot "${HOST_DIR}" xorriso -as mkisofs -iso-level 3 -rock -joliet \
