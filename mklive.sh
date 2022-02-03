@@ -122,6 +122,9 @@ if [ -n "$1" ]; then
     BUILD_DIR="$1"
 fi
 
+# make absolute so that we aren't prone to bad cleanup with changed cwd
+BUILD_DIR=$(realpath "$BUILD_DIR")
+
 IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"
 HOST_DIR="${BUILD_DIR}/host"
