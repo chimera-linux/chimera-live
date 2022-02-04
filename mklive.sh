@@ -101,6 +101,11 @@ done
 
 shift $((OPTIND - 1))
 
+case "$APK_ARCH" in
+    x86_64|ppc64|ppc64le|aarch64) ;;
+    *) die "unsupported architecture: ${APK_ARCH}";;
+esac
+
 # default output file
 if [ -z "$OUT_FILE" ]; then
     OUT_FILE="chimera-linux-${APK_ARCH}-$(date '+%Y%m%d').iso"
@@ -258,6 +263,20 @@ generate_grub_ppc() {
     cp -f ppc/ofboot.b "${IMAGE_DIR}/ppc/bootinfo.txt"
 }
 
+generate_grub_x86() {
+    die "not implemented yet"
+}
+
+generate_grub_aarch64() {
+    die "not implemented yet"
+}
+
+case "${APK_ARCH}" in
+    ppc*) generate_grub_ppc;;
+    x86*) generate_grub_x86;;
+    aarch64*) generate_grub_aarch64;;
+esac
+
 generate_grub_ppc
 
 # clean up target root
@@ -276,7 +295,7 @@ cleanup_dirs() {
 }
 
 cleanup_dirs "${ROOT_DIR}/run" "${ROOT_DIR}/tmp" "${ROOT_DIR}/var/cache" \
-    "${ROOT_DIR}/var/tmp"
+    "${ROOT_DIR}/var/tmp" "${ROOT_DIR}/var/run"
 
 # clean up pointless ramdisk(s)
 for f in "${ROOT_DIR}/boot/"initrd*; do
@@ -310,6 +329,20 @@ generate_iso_ppc() {
         -hfsplus-file-creator-type chrp tbxi boot/ofboot.b \
         -hfs-bless-by p boot -sysid PPC -chrp-boot-part
 }
+
+generate_iso_x86() {
+    die "not implemented yet"
+}
+
+generate_iso_efi() {
+    die "not implemented yet"
+}
+
+case "${APK_ARCH}" in
+    ppc*) generate_iso_ppc;;
+    x86*) generate_iso_x86;;
+    *) generate_iso_efi;;
+esac
 
 generate_iso_ppc
 
