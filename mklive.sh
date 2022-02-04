@@ -14,9 +14,8 @@
 umask 022
 
 readonly PROGNAME=$(basename "$0")
-readonly PKG_HOST="squashfs-tools-ng xorriso grub-powerpc-ieee1275"
-readonly PKG_INITRD="openresolv device-mapper xz"
-readonly PKG_ROOT="base-full linux ${PKG_INITRD}"
+readonly PKG_BOOT="grub-powerpc-ieee1275 openresolv device-mapper xz"
+readonly PKG_ROOT="base-full linux"
 
 BUILD_DIR="build"
 
@@ -32,19 +31,8 @@ umount_pseudo() {
     umount -f "${ROOT_DIR}/sys" > /dev/null 2>&1
 }
 
-mount_hostbind() {
-    mkdir -p "${HOST_DIR}/build" || die "failed to create mount point"
-    mount --bind "${BUILD_DIR}" "${HOST_DIR}/build" \
-        || die "failed to mount build dir"
-}
-
-umount_hostbind() {
-    umount -f "${HOST_DIR}/build" > /dev/null 2>&1
-}
-
 error_sig() {
     umount_pseudo
-    umount_hostbind
     exit ${1:=0}
 }
 
@@ -82,6 +70,14 @@ APK_BIN="apk"
 
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
+fi
+
+if ! command -v gensquashfs > /dev/null 2>&1; then
+    die "gensquashfs needs to be installed (squashfs-tools-ng)"
+fi
+
+if ! command -v xorriso > /dev/null 2>&1; then
+    die "xorriso needs to be installed"
 fi
 
 APK_ARCH=$(${APK_BIN} --print-arch)
@@ -127,7 +123,6 @@ BUILD_DIR=$(realpath "$BUILD_DIR")
 
 IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"
-HOST_DIR="${BUILD_DIR}/host"
 BOOT_DIR="${IMAGE_DIR}/boot"
 LIVE_DIR="${IMAGE_DIR}/live"
 
@@ -137,7 +132,7 @@ fi
 
 WRKSRC=$(pwd)
 
-mkdir -p "${BOOT_DIR}" "${LIVE_DIR}" "${ROOT_DIR}" "${HOST_DIR}" \
+mkdir -p "${BOOT_DIR}" "${LIVE_DIR}" "${ROOT_DIR}" \
     || die "failed to create directories"
 
 # initialize both roots
@@ -158,17 +153,7 @@ do_initdb() {
     cd "${WRKSRC}"
 }
 
-do_initdb "${HOST_DIR}"
 do_initdb "${ROOT_DIR}"
-
-# install host packages
-msg "Installing host packages..."
-
-run_apk "${HOST_DIR}" --no-scripts add base-minimal \
-    || die "failed to install host base-minimal"
-run_apk "${HOST_DIR}" fix base-files dash dinit-chimera \
-    || die "failed to fix up host root"
-run_apk "${HOST_DIR}" add ${PKG_HOST} || die "failed to install host utils"
 
 # install target packages
 msg "Installing target base packages..."
@@ -176,16 +161,15 @@ msg "Installing target base packages..."
 run_apk "${ROOT_DIR}" --no-scripts add base-minimal \
     || die "failed to install target base-minimal"
 run_apk "${ROOT_DIR}" fix base-files dash dinit-chimera \
-    || die "failed to fix up host root"
+    || die "failed to fix up target root"
 
 # needs to be available before adding full package set
 msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add ${PKG_ROOT} || die "failed to install full rootfs"
-# it will fail, we just need to remove it from world
-run_apk "${ROOT_DIR}" del base-minimal > /dev/null 2>&1
+run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_ROOT} \
+    || die "failed to install full rootfs"
 
 # determine kernel version
 if [ -z "$KERNVER" ]; then
@@ -256,17 +240,17 @@ generate_grub_ppc() {
      -e "s|@@BOOT_CMDLINE@@||g" \
      ppc/grub.cfg.in > "${BOOT_DIR}/grub/grub.cfg"
 
-    mkdir -p "${HOST_DIR}/boot/grub"
-    cp -f ppc/early.cfg "${HOST_DIR}/boot/grub"
+    mkdir -p "${ROOT_DIR}/boot/grub"
+    cp -f ppc/early.cfg "${ROOT_DIR}/boot/grub"
 
-    chroot "${HOST_DIR}" grub-mkimage --verbose --config="boot/grub/early.cfg" \
+    chroot "${ROOT_DIR}" grub-mkimage --verbose --config="boot/grub/early.cfg" \
         --prefix="boot/grub" --directory="/usr/lib/grub/powerpc-ieee1275" \
         --format="powerpc-ieee1275" --output="/tmp/grub.img" \
         boot datetime disk ext2 help hfs hfsplus ieee1275_fb iso9660 ls \
         macbless ofnet part_apple part_gpt part_msdos scsi search reboot \
         linux || die "failed to generate grub image"
 
-    cp -f "${HOST_DIR}/tmp/grub.img" "${BOOT_DIR}"
+    cp -f "${ROOT_DIR}/tmp/grub.img" "${BOOT_DIR}"
 
     mkdir -p "${IMAGE_DIR}/ppc"
     cp -f ppc/ofboot.b "${BOOT_DIR}"
@@ -279,7 +263,8 @@ generate_grub_ppc
 # clean up target root
 msg "Cleaning up target root..."
 
-run_apk "${ROOT_DIR}" del ${PKG_INITRD} # may partially fail
+run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} \
+    || die "failed to remove leftover packages"
 
 cleanup_initramfs
 
@@ -298,26 +283,26 @@ for f in "${ROOT_DIR}/boot/"initrd*; do
     [ -f "$f" ] && rm -f "$f"
 done
 
+# remove early.cfg
+rm -rf "${ROOT_DIR}/boot/grub"
+
 # generate squashfs
 msg "Generating squashfs filesystem..."
 
 umount_pseudo
-mount_hostbind
 
-chroot "${HOST_DIR}" gensquashfs --pack-dir "/build/rootfs" -c xz \
-    "/build/image/live/filesystem.squashfs"
+gensquashfs --pack-dir "${ROOT_DIR}" -c xz "${LIVE_DIR}/filesystem.squashfs" \
+    || die "gensquashfs failed"
 
 # generate iso image
 msg "Generating ISO image..."
 
 generate_iso_base() {
-    chroot "${HOST_DIR}" xorriso -as mkisofs -iso-level 3 -rock -joliet \
+   xorriso -as mkisofs -iso-level 3 -rock -joliet \
         -max-iso9660-filenames -omit-period -omit-version-number \
         -relaxed-filenames -allow-lowercase -volid "CHIMERA_LIVE" "$@" \
-        -output "/build/image.iso" "/build/image" \
+        -output "${OUT_FILE}" "${IMAGE_DIR}" \
         || die "failed to generate ISO image"
-
-    mv "${BUILD_DIR}/image.iso" "${OUT_FILE}"
 }
 
 generate_iso_ppc() {
@@ -327,7 +312,5 @@ generate_iso_ppc() {
 }
 
 generate_iso_ppc
-
-umount_hostbind
 
 msg "Successfully generated image (${OUT_FILE})"
