@@ -105,7 +105,7 @@ case "$APK_ARCH" in
     x86_64) PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi";;
     aarch64) PKG_GRUB="grub-arm64-efi";;
     riscv64) PKG_GRUB="grub-riscv64-efi";;
-    ppc64)|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
+    ppc64|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
     *) die "unsupported architecture: ${APK_ARCH}";;
 esac
 

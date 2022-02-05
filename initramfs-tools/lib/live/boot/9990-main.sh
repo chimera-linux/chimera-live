@@ -209,6 +209,9 @@ Live ()
 
 	Swap
 
+	# setup specific to chimera
+	Chimera_User
+
 	exec 1>&6 6>&-
 	exec 2>&7 7>&-
 	kill ${tailpid}
