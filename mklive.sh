@@ -14,7 +14,7 @@
 umask 022
 
 readonly PROGNAME=$(basename "$0")
-readonly PKG_BOOT="grub-powerpc-ieee1275 openresolv device-mapper xz"
+readonly PKG_BOOT="openresolv device-mapper xz"
 readonly PKG_ROOT="base-full linux"
 
 BUILD_DIR="build"
@@ -102,7 +102,10 @@ done
 shift $((OPTIND - 1))
 
 case "$APK_ARCH" in
-    x86_64|ppc64|ppc64le|aarch64) ;;
+    x86_64) PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi";;
+    aarch64) PKG_GRUB="grub-arm64-efi";;
+    riscv64) PKG_GRUB="grub-riscv64-efi";;
+    ppc64)|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
     *) die "unsupported architecture: ${APK_ARCH}";;
 esac
 
@@ -173,7 +176,7 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_ROOT} \
+run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_GRUB} ${PKG_ROOT} \
     || die "failed to install full rootfs"
 
 # determine kernel version
@@ -282,7 +285,7 @@ generate_grub_ppc
 # clean up target root
 msg "Cleaning up target root..."
 
-run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} \
+run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} ${PKG_GRUB} \
     || die "failed to remove leftover packages"
 
 cleanup_initramfs
