@@ -193,6 +193,11 @@ if [ -z "$KERNVER" ]; then
     die "unable to determine kernel version"
 fi
 
+# add data files
+msg "Copying data files..."
+
+[ -f data/issue ] && cp data/issue "${ROOT_DIR}/etc"
+
 # add live-boot initramfs stuff
 msg "Copying live initramfs scripts..."
 
