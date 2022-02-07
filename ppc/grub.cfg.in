@@ -6,10 +6,6 @@ set timeout="10"
 set default="chimera-live"
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id chimera-live {
-    insmod part_apple
-    insmod iso9660
-    insmod linux
-    search --label "CHIMERA_LIVE" --hint cd,apple2
     linux /live/vmlinux boot=live nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
