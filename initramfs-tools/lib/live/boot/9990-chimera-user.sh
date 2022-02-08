@@ -20,6 +20,10 @@ Chimera_User() {
     [ -x /root/usr/bin/mksh ] && USERSHELL="/usr/bin/mksh"
     [ -z "$USERSHELL" ] && USERSHELL="/bin/sh"
 
+    # hostname; prevent syslog from doing dns lookup
+    echo "127.0.0.1 $(cat /root/etc/hostname)" >> /root/etc/hosts
+    echo "::1 $(cat /root/etc/hostname)" >> /root/etc/hosts
+
     chroot /root useradd -m -c anon -G audio,video,wheel -s "$USERSHELL" anon
 
     chroot /root sh -c 'echo "root:chimera"|chpasswd -c SHA512'
@@ -35,9 +39,11 @@ Chimera_User() {
     fi
 
     # enable services
+    Chimera_Service udevd early
     Chimera_Service dinit-userservd login
     Chimera_Service dbus login
     Chimera_Service elogind login
+    Chimera_Service polkitd login
     Chimera_Service syslog-ng login
     Chimera_Service sshd boot
 
