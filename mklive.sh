@@ -200,8 +200,19 @@ if [ -z "$KERNVER" ]; then
     done
 fi
 
+for f in "${ROOT_DIR}/boot/"vmlinu[xz]-*; do
+    [ -f "$f" ] || break
+    KERNFILE=${f##*boot/}
+    KERNFILE=${KERNFILE%%-*}
+    break
+done
+
 if [ -z "$KERNVER" ]; then
     die "unable to determine kernel version"
+fi
+
+if [ -z "$KERNFILE" ]; then
+    die "unable to determine kernel file name"
 fi
 
 # add data files
@@ -258,6 +269,7 @@ msg "Generating bootloader image..."
 generate_grub_menu() {
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
+     -e "s|@@KERNFILE@@|${KERNFILE}|g" \
      -e "s|@@KERNVER@@|${KERNVER}|g" \
      -e "s|@@ARCH@@|${APK_ARCH}|g" \
      -e "s|@@BOOT_CMDLINE@@||g" \
@@ -299,7 +311,7 @@ generate_grub_x86() {
     mkdir -p "${ROOT_DIR}/boot/grub"
 
     cp -f grub/search.cfg "${ROOT_DIR}/boot/grub/grub.cfg"
-    generate_grub_menu >> "${ROOT_DIR}/grub/grub.cfg"
+    generate_grub_menu >> "${ROOT_DIR}/boot/grub/grub.cfg"
 
     # BIOS image
     chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-pc \
@@ -324,17 +336,18 @@ generate_grub_x86() {
         "${ROOT_DIR}/tmp/bios.img" > "${BOOT_DIR}/bios.img"
 
     # make up an EFI filesystem
-    truncate -s 32M "${BOOT_DIR}/efiboot.img" \
+    EFIBOOT="${BOOT_DIR}/efiboot.img"
+    truncate -s 32M "${EFIBOOT}" \
         || die "failed to create EFI image"
-    mkfs.vfat "${BOOT_DIR}/efiboot.img" || die "failed to format EFI image"
+    mkfs.vfat "${EFIBOOT}" || die "failed to format EFI image"
     # create dirs
-    LC_CTYPE=C mmd -i "${BOOT_DIR}/efiboot.img" efi efi/boot \
+    LC_CTYPE=C mmd -i "${EFIBOOT}" efi efi/boot \
         || die "failed to populate EFI image"
     # x64
-    LC_CTYPE=C mcopy -i "${BOOT_DIR}/efiboot.img" "${ROOT_DIR}/bootx64.efi" \
+    LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/bootx64.efi" \
         "::efi/boot/" || die "failed to populate EFI image"
     # x32
-    LC_CTYPE=C mcopy -i "${BOOT_DIR}/efiboot.img" "${ROOT_DIR}/bootia32.efi" \
+    LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/bootia32.efi" \
         "::efi/boot/" || die "failed to populate EFI image"
 
     # save boot_hybrid.img before it's removed, used by xorriso
@@ -424,7 +437,5 @@ case "${APK_ARCH}" in
     x86*) generate_iso_x86;;
     *) generate_iso_efi;;
 esac
-
-generate_iso_ppc
 
 msg "Successfully generated image (${OUT_FILE})"
