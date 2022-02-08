@@ -102,8 +102,15 @@ done
 shift $((OPTIND - 1))
 
 case "$APK_ARCH" in
-    x86_64)
-        PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi"
+    x86_64) PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi";;
+    aarch64) PKG_GRUB="grub-arm64-efi";;
+    riscv64) PKG_GRUB="grub-riscv64-efi";;
+    ppc64|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
+    *) die "unsupported architecture: ${APK_ARCH}";;
+esac
+
+case "$PKG_GRUB" in
+    *-efi*)
         if ! command -v mkfs.vfat > /dev/null 2>&1; then
             die "cannot create FAT filesystems"
         fi
@@ -114,10 +121,6 @@ case "$APK_ARCH" in
             die "cannot manipulate FAT filesystems"
         fi
         ;;
-    aarch64) PKG_GRUB="grub-arm64-efi";;
-    riscv64) PKG_GRUB="grub-riscv64-efi";;
-    ppc64|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
-    *) die "unsupported architecture: ${APK_ARCH}";;
 esac
 
 # default output file
@@ -307,11 +310,36 @@ generate_grub_ppc() {
     cp -f ppc/ofboot.b "${IMAGE_DIR}/ppc/bootinfo.txt"
 }
 
-generate_grub_x86() {
+prepare_menu_standalone() {
     mkdir -p "${ROOT_DIR}/boot/grub"
 
     cp -f grub/search.cfg "${ROOT_DIR}/boot/grub/grub.cfg"
     generate_grub_menu >> "${ROOT_DIR}/boot/grub/grub.cfg"
+}
+
+generate_image_efi() {
+    chroot "${ROOT_DIR}" grub-mkstandalone --format=${1}-efi \
+        --output="/tmp/boot${2}.efi" --locales="" --fonts="" \
+        boot/grub/grub.cfg || die "failed to generate EFI ${1} image"
+}
+
+create_efi_fs() {
+    EFIBOOT="${BOOT_DIR}/efiboot.img"
+    truncate -s 32M "${EFIBOOT}" \
+        || die "failed to create EFI image"
+    mkfs.vfat "${EFIBOOT}" || die "failed to format EFI image"
+    # create dirs
+    LC_CTYPE=C mmd -i "${EFIBOOT}" efi efi/boot \
+        || die "failed to populate EFI image"
+    # populate
+    for img in "$@"; do
+        LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/boot${img}.efi" \
+            "::efi/boot/" || die "failed to populate EFI image"
+    done
+}
+
+generate_grub_x86() {
+    prepare_menu_standalone
 
     # BIOS image
     chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-pc \
@@ -321,52 +349,30 @@ generate_grub_x86() {
         --locales="" --fonts="" boot/grub/grub.cfg \
         || die "failed to generate BIOS image"
 
-    # EFI x86_64 image
-    chroot "${ROOT_DIR}" grub-mkstandalone --format=x86_64-efi \
-        --output="/tmp/bootx64.efi" --locales="" --fonts="" \
-        boot/grub/grub.cfg || die "failed to generate EFI x64 image"
-
-    # EFI x86 image
-    chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-efi \
-        --output="/tmp/bootia32.efi" --locales="" --fonts="" \
-        boot/grub/grub.cfg || die "failed to generate EFI x32 image"
+    generate_image_efi x86_64 x64
+    generate_image_efi i386 ia32
 
     # final BIOS image
     cat "${ROOT_DIR}/usr/lib/grub/i386-pc/cdboot.img" \
         "${ROOT_DIR}/tmp/bios.img" > "${BOOT_DIR}/bios.img"
 
-    # make up an EFI filesystem
-    EFIBOOT="${BOOT_DIR}/efiboot.img"
-    truncate -s 32M "${EFIBOOT}" \
-        || die "failed to create EFI image"
-    mkfs.vfat "${EFIBOOT}" || die "failed to format EFI image"
-    # create dirs
-    LC_CTYPE=C mmd -i "${EFIBOOT}" efi efi/boot \
-        || die "failed to populate EFI image"
-    # x64
-    LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/bootx64.efi" \
-        "::efi/boot/" || die "failed to populate EFI image"
-    # x32
-    LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/bootia32.efi" \
-        "::efi/boot/" || die "failed to populate EFI image"
+    create_efi_fs x64 ia32
 
     # save boot_hybrid.img before it's removed, used by xorriso
     cp -f "${ROOT_DIR}/usr/lib/grub/i386-pc/boot_hybrid.img" "${BUILD_DIR}"
 }
 
-generate_grub_aarch64() {
-    die "not implemented yet"
-}
-
-generate_grub_riscv64() {
-    die "not implemented yet"
+generate_grub_efi() {
+    prepare_menu_standalone
+    generate_image_efi $1 $2
+    create_efi_fs $2
 }
 
 case "${APK_ARCH}" in
     ppc*) generate_grub_ppc;;
     x86*) generate_grub_x86;;
-    aarch64*) generate_grub_aarch64;;
-    riscv64*) generate_grub_riscv64;;
+    aarch64*) generate_grub_efi arm64 a64;;
+    riscv64*) generate_grub_efi riscv64 rv64;;
 esac
 
 # clean up target root
