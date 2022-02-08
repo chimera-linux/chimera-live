@@ -435,7 +435,8 @@ generate_iso_x86() {
 }
 
 generate_iso_efi() {
-    die "not implemented yet"
+    generate_iso_base --efi-boot boot/efiboot.img -no-emul-boot \
+        -append_partition 2 0xef "${BOOT_DIR}/efiboot.img"
 }
 
 case "${APK_ARCH}" in
