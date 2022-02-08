@@ -102,7 +102,18 @@ done
 shift $((OPTIND - 1))
 
 case "$APK_ARCH" in
-    x86_64) PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi";;
+    x86_64)
+        PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi"
+        if ! command -v mkfs.vfat > /dev/null 2>&1; then
+            die "cannot create FAT filesystems"
+        fi
+        if ! command -v mmd > /dev/null 2>&1; then
+            die "cannot manipulate FAT filesystems"
+        fi
+        if ! command -v mcopy > /dev/null 2>&1; then
+            die "cannot manipulate FAT filesystems"
+        fi
+        ;;
     aarch64) PKG_GRUB="grub-arm64-efi";;
     riscv64) PKG_GRUB="grub-riscv64-efi";;
     ppc64|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
@@ -244,6 +255,15 @@ done
 # generate bootloader image
 msg "Generating bootloader image..."
 
+generate_grub_menu() {
+    sed \
+     -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
+     -e "s|@@KERNVER@@|${KERNVER}|g" \
+     -e "s|@@ARCH@@|${APK_ARCH}|g" \
+     -e "s|@@BOOT_CMDLINE@@||g" \
+     grub/menu.cfg.in
+}
+
 generate_grub_ppc() {
     # grub.cfg you can see on the media
 
@@ -251,13 +271,7 @@ generate_grub_ppc() {
 
     cp -f grub/early.cfg "${BOOT_DIR}/grub/grub.cfg"
     echo >> "${BOOT_DIR}/grub/grub.cfg"
-
-    sed \
-     -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
-     -e "s|@@KERNVER@@|${KERNVER}|g" \
-     -e "s|@@ARCH@@|${APK_ARCH}|g" \
-     -e "s|@@BOOT_CMDLINE@@||g" \
-     grub/menu.cfg.in >> "${BOOT_DIR}/grub/grub.cfg"
+    generate_grub_menu >> "${BOOT_DIR}/grub/grub.cfg"
 
     # grub.cfg that is builtin into the image
 
@@ -282,7 +296,49 @@ generate_grub_ppc() {
 }
 
 generate_grub_x86() {
-    die "not implemented yet"
+    mkdir -p "${ROOT_DIR}/boot/grub"
+
+    cp -f grub/search.cfg "${ROOT_DIR}/boot/grub/grub.cfg"
+    generate_grub_menu >> "${ROOT_DIR}/grub/grub.cfg"
+
+    # BIOS image
+    chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-pc \
+        --output="/tmp/bios.img" \
+        --install-modules="linux normal iso9660 biosdisk memdisk search" \
+        --modules="linux normal iso9660 biosdisk search" \
+        --locales="" --fonts="" boot/grub/grub.cfg \
+        || die "failed to generate BIOS image"
+
+    # EFI x86_64 image
+    chroot "${ROOT_DIR}" grub-mkstandalone --format=x86_64-efi \
+        --output="/tmp/bootx64.efi" --locales="" --fonts="" \
+        boot/grub/grub.cfg || die "failed to generate EFI x64 image"
+
+    # EFI x86 image
+    chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-efi \
+        --output="/tmp/bootia32.efi" --locales="" --fonts="" \
+        boot/grub/grub.cfg || die "failed to generate EFI x32 image"
+
+    # final BIOS image
+    cat "${ROOT_DIR}/usr/lib/grub/i386-pc/cdboot.img" \
+        "${ROOT_DIR}/tmp/bios.img" > "${BOOT_DIR}/bios.img"
+
+    # make up an EFI filesystem
+    truncate -s 32M "${BOOT_DIR}/efiboot.img" \
+        || die "failed to create EFI image"
+    mkfs.vfat "${BOOT_DIR}/efiboot.img" || die "failed to format EFI image"
+    # create dirs
+    LC_CTYPE=C mmd -i "${BOOT_DIR}/efiboot.img" efi efi/boot \
+        || die "failed to populate EFI image"
+    # x64
+    LC_CTYPE=C mcopy -i "${BOOT_DIR}/efiboot.img" "${ROOT_DIR}/bootx64.efi" \
+        "::efi/boot/" || die "failed to populate EFI image"
+    # x32
+    LC_CTYPE=C mcopy -i "${BOOT_DIR}/efiboot.img" "${ROOT_DIR}/bootia32.efi" \
+        "::efi/boot/" || die "failed to populate EFI image"
+
+    # save boot_hybrid.img before it's removed, used by xorriso
+    cp -f "${ROOT_DIR}/usr/lib/grub/i386-pc/boot_hybrid.img" "${BUILD_DIR}"
 }
 
 generate_grub_aarch64() {
@@ -352,7 +408,11 @@ generate_iso_ppc() {
 }
 
 generate_iso_x86() {
-    die "not implemented yet"
+    generate_iso_base -eltorito-boot boot/bios.img -no-emul-boot \
+        -boot-load-size 4 -boot-info-table --eltorito-catalog boot/boot.cat \
+        --grub2-boot-info --grub2-mbr "${BUILD_DIR}/boot_hybrid.img" \
+        -eltorito-alt-boot -e boot/efiboot.img -no-emul-boot \
+        -append_partition 2 0xef "${BOOT_DIR}/efiboot.img"
 }
 
 generate_iso_efi() {
