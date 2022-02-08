@@ -1,0 +1,7 @@
+# ensure linux command line is always on a single line; this is because e.g.
+# petitboot's grub parser cannot deal with multiline kernel parameters
+
+menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id chimera-live {
+    linux /live/vmlinux boot=live nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    initrd /live/initrd
+}

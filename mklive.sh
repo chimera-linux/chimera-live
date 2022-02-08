@@ -245,18 +245,28 @@ done
 msg "Generating bootloader image..."
 
 generate_grub_ppc() {
+    # grub.cfg you can see on the media
+
     mkdir -p "${BOOT_DIR}/grub"
+
+    cp -f grub/early.cfg "${BOOT_DIR}/grub/grub.cfg"
+    echo >> "${BOOT_DIR}/grub/grub.cfg"
+
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
      -e "s|@@KERNVER@@|${KERNVER}|g" \
      -e "s|@@ARCH@@|${APK_ARCH}|g" \
      -e "s|@@BOOT_CMDLINE@@||g" \
-     ppc/grub.cfg.in > "${BOOT_DIR}/grub/grub.cfg"
+     grub/menu.cfg.in >> "${BOOT_DIR}/grub/grub.cfg"
+
+    # grub.cfg that is builtin into the image
 
     mkdir -p "${ROOT_DIR}/boot/grub"
-    cp -f ppc/early.cfg "${ROOT_DIR}/boot/grub"
 
-    chroot "${ROOT_DIR}" grub-mkimage --verbose --config="boot/grub/early.cfg" \
+    cp -f grub/search.cfg "${ROOT_DIR}/boot/grub"
+    echo 'set prefix=($root)/boot/grub' >> "${ROOT_DIR}/boot/grub/search.cfg"
+
+    chroot "${ROOT_DIR}" grub-mkimage --verbose --config="boot/grub/search.cfg" \
         --prefix="boot/grub" --directory="/usr/lib/grub/powerpc-ieee1275" \
         --format="powerpc-ieee1275" --output="/tmp/grub.img" \
         boot datetime disk ext2 help hfs hfsplus ieee1275_fb iso9660 ls \
@@ -279,13 +289,16 @@ generate_grub_aarch64() {
     die "not implemented yet"
 }
 
+generate_grub_riscv64() {
+    die "not implemented yet"
+}
+
 case "${APK_ARCH}" in
     ppc*) generate_grub_ppc;;
     x86*) generate_grub_x86;;
     aarch64*) generate_grub_aarch64;;
+    riscv64*) generate_grub_riscv64;;
 esac
-
-generate_grub_ppc
 
 # clean up target root
 msg "Cleaning up target root..."
@@ -310,7 +323,7 @@ for f in "${ROOT_DIR}/boot/"initrd*; do
     [ -f "$f" ] && rm -f "$f"
 done
 
-# remove early.cfg
+# remove on-media grub leftovers
 rm -rf "${ROOT_DIR}/boot/grub"
 
 # generate squashfs
