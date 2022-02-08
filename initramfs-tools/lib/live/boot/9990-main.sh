@@ -211,6 +211,7 @@ Live ()
 
 	# setup specific to chimera
 	Chimera_User
+	Chimera_Graphical
 
 	exec 1>&6 6>&-
 	exec 2>&7 7>&-

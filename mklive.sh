@@ -57,6 +57,7 @@ Options:
  -o FILE      Output a FILE (chimera-linux-ARCH-YYYYMMDD.iso by default)
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
+ -p PACKAGES  List of additional packages to install.
  -h           Print this message.
 EOF
     exit ${1:=1}
@@ -83,17 +84,18 @@ fi
 APK_ARCH=$(${APK_BIN} --print-arch)
 
 run_apk() {
-    "$APK_BIN" --repository "${APK_REPO}" --root "$@"
+    "$APK_BIN" ${APK_REPO} --root "$@"
 }
 
-while getopts "a:k:o:r:h" opt; do
+while getopts "a:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
         k) APK_KEY="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
-        r) APK_REPO="$OPTARG";;
+        p) PACKAGES="$OPTARG";;
+        r) APK_REPO="$APK_REPO --repository $OPTARG";;
         h) usage 0 ;;
         *) usage ;;
     esac
@@ -128,9 +130,20 @@ if [ -z "$OUT_FILE" ]; then
     OUT_FILE="chimera-linux-${APK_ARCH}-$(date '+%Y%m%d').iso"
 fi
 
-if [ -z "$APK_REPO" -o ! -f "${APK_REPO}/${APK_ARCH}/APKINDEX.tar.gz" ]; then
-    die "must provide a valid repository"
+if [ -z "$APK_REPO" ]; then
+    die "must provide at least one valid repository"
 fi
+
+for f in ${APK_REPO}; do
+    case "$f" in
+        --repository) ;;
+        *)
+            if [ ! -f "${f}/${APK_ARCH}/APKINDEX.tar.gz" ]; then
+                die "invalid repository ${f}"
+            fi
+            ;;
+    esac
+done
 
 if [ -z "$APK_KEY" -o ! -f "$APK_KEY" ]; then
     die "must provide a valid public key"
@@ -190,7 +203,7 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_GRUB} ${PKG_ROOT} \
+run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_GRUB} ${PKG_ROOT} ${PACKAGES} \
     || die "failed to install full rootfs"
 
 # determine kernel version
