@@ -1319,21 +1319,6 @@ do_union ()
 	unionro="${*}"		# space separated list of read-only branches (optional)
 
 	case "${UNIONTYPE}" in
-		aufs)
-			rw_opt="rw"
-			ro_opt="rr+wh"
-			noxino_opt="noxino"
-
-			unionmountopts="-o noatime,${noxino_opt},dirs=${unionrw}=${rw_opt}"
-			if [ -n "${unionro}" ]
-			then
-				for rofs in ${unionro}
-				do
-					unionmountopts="${unionmountopts}:${rofs}=${ro_opt}"
-				done
-			fi
-			;;
-
 		overlay)
 			# XXX: can unionro be optional? i.e. can overlay skip lowerdir?
 			if [ -z "${unionro}" ]

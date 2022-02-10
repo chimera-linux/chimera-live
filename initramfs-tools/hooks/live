@@ -148,8 +148,7 @@ manual_add_modules squashfs
 manual_add_modules sqlzma
 manual_add_modules unlzma
 
-# Filesystem: aufs/overlay
-manual_add_modules aufs
+# Filesystem: overlay
 manual_add_modules overlay
 
 # Filesystem: vfat
