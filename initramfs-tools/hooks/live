@@ -44,6 +44,7 @@ then
 fi
 
 # extra utilities needed by live
+# added by chimera; debian uses busybox so it does not need them
 copy_exec /usr/bin/awk
 copy_exec /usr/bin/basename
 copy_exec /usr/bin/chmod
@@ -53,6 +54,7 @@ copy_exec /usr/bin/du
 copy_exec /usr/bin/expr
 copy_exec /usr/bin/grep
 copy_exec /usr/bin/sed
+copy_exec /usr/bin/sha256sum
 copy_exec /usr/bin/sort
 copy_exec /usr/bin/tail
 copy_exec /usr/bin/touch
@@ -60,6 +62,12 @@ copy_exec /usr/bin/tr
 copy_exec /usr/bin/wc
 
 ln -sf grep "${DESTDIR}/usr/bin/egrep"
+
+# util-linux bits
+copy_exec /usr/bin/blockdev
+copy_exec /usr/bin/eject
+copy_exec /usr/bin/losetup
+copy_exec /usr/bin/mount
 
 # klibc dependencies
 mkdir -p ${DESTDIR}/lib/device-mapper
@@ -120,7 +128,7 @@ manual_add_modules btrfs
 if [ -x /sbin/mount.cifs ]
 then
 	copy_exec /sbin/mount.cifs
-        manual_add_modules cifs
+	manual_add_modules cifs
 fi
 
 # Filesystem: ext3/ext4
@@ -134,13 +142,7 @@ manual_add_modules hfsplus
 # Filesystem: jffs2
 manual_add_modules jffs2
 
-if [ -x /usr/bin/rsync ] && [ "${MINIMAL:-}" != "true" ] && [ "${MINIMAL:-}" != "yes" ]
-then
-	copy_exec /usr/bin/rsync /bin
-fi
-
 # Filesystem: squashfs
-copy_exec /sbin/losetup
 manual_add_modules loop
 manual_add_modules squashfs
 manual_add_modules sqlzma
@@ -171,8 +173,6 @@ if [ "${DISABLE_DM_VERITY:-}" != "true" ] && [ "${DISABLE_DM_VERITY:-}" != "yes"
 then
 	[ "${QUIET}" ] || echo -n " dm-verity"
 	manual_add_modules dm-verity
-	# The BusyBox mount does not support dm-verity so we use the util-linux version.
-	copy_exec /usr/bin/mount /bin
 fi
 
 [ "${QUIET}" ] || echo -n " devices"
@@ -195,43 +195,13 @@ fi
 # Hardware: network
 auto_add_modules net
 
-# Program: eject
-if [ -x /usr/bin/eject ]
-then
-	copy_exec /usr/bin/eject /bin
-fi
-
 [ "${QUIET}" ] || echo -n " utils"
-
-# Feature: Verify Checksums
-if [ -e /etc/progress-linux_version ]
-then
-	copy_exec /usr/bin/sha256sum /bin
-else
-	copy_exec /usr/bin/md5sum /bin
-fi
-
-# Program: memdisk
-if [ -x /usr/bin/memdiskfind ]
-then
-[ "${QUIET}" ] || echo -n " memdisk"
-	copy_exec /usr/bin/memdiskfind
-	manual_add_modules phram
-	manual_add_modules mtdblock
-fi
 
 # Program: udev
 if [ -x /bin/udevadm ]
 then
 	[ "${QUIET}" ] || echo -n " udev"
 	copy_exec /bin/udevadm
-fi
-
-# Program: blockdev
-if [ -x /sbin/blockdev ]
-then
-	[ "${QUIET}" ] || echo -n " blockdev"
-	copy_exec /sbin/blockdev
 fi
 
 # FUSE kernel module
@@ -266,25 +236,6 @@ then
 	#manual_add_modules ib_iser
 	manual_add_modules iscsi_tcp
 	manual_add_modules crc32c
-fi
-
-# Some experimental stuff
-
-[ "${QUIET}" ] || echo -n " dns"
-
-# libnss_dns.so.*:    DNS
-# libnss_files.so.*:  /etc/hosts and /etc/passwd
-# libnss_compat.so.*: /etc/passwd
-
-for _SHLIB in $(find /lib /usr/lib -name 'libnss_dns.so.*' -o -name 'libnss_files.so.*')
-do
-	copy_exec "${_SHLIB}"
-done
-
-if [ ! -e "${DESTDIR}/etc/nsswitch.conf" ]
-then
-	# Needed to make "hostname -f" honor the domainname provided by DHCP
-	echo "hosts: files dns" > "${DESTDIR}/etc/nsswitch.conf"
 fi
 
 [ "${QUIET}" ] || echo .

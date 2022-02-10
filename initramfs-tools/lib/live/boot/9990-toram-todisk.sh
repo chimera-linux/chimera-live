@@ -73,24 +73,12 @@ copy_live_to ()
 	else
 		if [ -n "${MODULETORAMFILE}" ]
 		then
-			if [ -x /bin/rsync ]
-			then
-				echo " * Copying $MODULETORAMFILE to RAM" 1>/dev/console
-				rsync -a --progress ${MODULETORAMFILE} ${copyto} 1>/dev/console # copy only the filesystem module
-			else
-				cp ${MODULETORAMFILE} ${copyto} # copy only the filesystem module
-			fi
+			cp ${MODULETORAMFILE} ${copyto} # copy only the filesystem module
 		else
-			if [ -x /bin/rsync ]
+			cp -a ${copyfrom}/* ${copyto}/
+			if [ -e ${copyfrom}/${LIVE_MEDIA_PATH}/.disk ]
 			then
-				echo " * Copying whole medium to RAM" 1>/dev/console
-				rsync -a --progress ${copyfrom}/* ${copyto} 1>/dev/console  # "cp -a" from busybox also copies hidden files
-			else
-				cp -a ${copyfrom}/* ${copyto}/
-				if [ -e ${copyfrom}/${LIVE_MEDIA_PATH}/.disk ]
-				then
-					cp -a ${copyfrom}/${LIVE_MEDIA_PATH}/.disk ${copyto}
-				fi
+				cp -a ${copyfrom}/${LIVE_MEDIA_PATH}/.disk ${copyto}
 			fi
 		fi
 

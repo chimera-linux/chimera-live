@@ -50,30 +50,6 @@ Live ()
 			# Do a local boot from hd
 			livefs_root=${ROOT}
 		else
-			if [ -x /usr/bin/memdiskfind ]
-			then
-				if MEMDISK=$(/usr/bin/memdiskfind)
-				then
-					# We found a memdisk, set up phram
-					# Sometimes "modprobe phram" can not successfully create /dev/mtd0.
-				        # Have to try several times.
-					max_try=20
-					while [ ! -c /dev/mtd0 ] && [ "$max_try" -gt 0 ]; do
-					  modprobe phram "phram=memdisk,${MEMDISK}"
-					  sleep 0.2
-					  if [ -c /dev/mtd0 ]; then
-					  	break
-					  else
-					  	rmmod phram
-				  	  fi
-					  max_try=$((max_try - 1))
-					done
-
-					# Load mtdblock, the memdisk will be /dev/mtdblock0
-					modprobe mtdblock
-				fi
-			fi
-
 			# Scan local devices for the image
 			i=0
 			while [ "$i" -lt 60 ]
@@ -144,12 +120,6 @@ Live ()
 
 	log_end_msg
 
-	# aufs2 in kernel versions around 2.6.33 has a regression:
-	# directories can't be accessed when read for the first the time,
-	# causing a failure for example when accessing /var/lib/fai
-	# when booting FAI, this simple workaround solves it
-	ls /root/* >/dev/null 2>&1
-
 	# if we do not unmount the ISO we can't run "fsck /dev/ice" later on
 	# because the mountpoint is left behind in /proc/mounts, so let's get
 	# rid of it when running from RAM
@@ -163,20 +133,6 @@ Live ()
 			rmdir --ignore-fail-on-non-empty /run/live/findiso \
 				>/dev/null 2>&1 || true
 		fi
-	fi
-
-	if [ -f /etc/hostname ] && ! grep -E -q -v '^[[:space:]]*(#|$)' "${rootmnt}/etc/hostname"
-	then
-		log_begin_msg "Copying /etc/hostname to ${rootmnt}/etc/hostname"
-		cp -v /etc/hostname "${rootmnt}/etc/hostname"
-		log_end_msg
-	fi
-
-	if [ -f /etc/hosts ] && ! grep -E -q -v '^[[:space:]]*(#|$|(127.0.0.1|::1|ff02::[12])[[:space:]])' "${rootmnt}/etc/hosts"
-	then
-		log_begin_msg "Copying /etc/hosts to ${rootmnt}/etc/hosts"
-		cp -v /etc/hosts "${rootmnt}/etc/hosts"
-		log_end_msg
 	fi
 
 	if [ -L /root/etc/resolv.conf ] ; then
