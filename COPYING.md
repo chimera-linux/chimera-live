@@ -1,3 +1,9 @@
+Note: the files in the initramfs-tools dir are a part of the Debian live-boot
+project and licensed under GPLv3. As a result, this project shall be distributed
+under the terms of the GPLv3.
+
+Files that are not a part of live-boot are individually licensed as follows:
+
 Copyright 2022 Daniel "q66" Kolesa
 
 Redistribution and use in source and binary forms, with or without modification,
