@@ -2,11 +2,11 @@
 # petitboot's grub parser cannot deal with multiline kernel parameters
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id chimera-live {
-    linux /live/@@KERNFILE@@ boot=live nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (RAM)" --id chimera-live-ram {
-    linux /live/@@KERNFILE@@ boot=live toram nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }

@@ -1,21 +1,21 @@
 # menu entries specific to GUI images
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (force X11)" --id chimera-live-x11 {
-    linux /live/@@KERNFILE@@ boot=live nowayland nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live nowayland init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (force X11) (RAM)" --id chimera-live-x11-ram {
-    linux /live/@@KERNFILE@@ boot=live toram nowayland nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live toram nowayland init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (console only)" --id chimera-live-cli {
-    linux /live/@@KERNFILE@@ boot=live nogui nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live nogui init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (console only) (RAM)" --id chimera-live-cli-ram {
-    linux /live/@@KERNFILE@@ boot=live toram nogui nonetworking init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live toram nogui init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
