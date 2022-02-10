@@ -58,6 +58,7 @@ Options:
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
  -p PACKAGES  List of additional packages to install.
+ -g           Generate a graphical image.
  -h           Print this message.
 EOF
     exit ${1:=1}
@@ -87,10 +88,11 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@"
 }
 
-while getopts "a:k:o:p:r:h" opt; do
+while getopts "a:gk:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
+        g) GRAPHICAL=1;;
         k) APK_KEY="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
@@ -283,13 +285,14 @@ done
 msg "Generating bootloader image..."
 
 generate_grub_menu() {
+    generate_grub_menu_base menu
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
      -e "s|@@KERNFILE@@|${KERNFILE}|g" \
      -e "s|@@KERNVER@@|${KERNVER}|g" \
      -e "s|@@ARCH@@|${APK_ARCH}|g" \
      -e "s|@@BOOT_CMDLINE@@||g" \
-     grub/menu.cfg.in
+     grub/menu${1}.cfg.in
 }
 
 generate_grub_ppc() {
@@ -300,6 +303,10 @@ generate_grub_ppc() {
     cp -f grub/early.cfg "${BOOT_DIR}/grub/grub.cfg"
     echo >> "${BOOT_DIR}/grub/grub.cfg"
     generate_grub_menu >> "${BOOT_DIR}/grub/grub.cfg"
+    if [ -n "$GRAPHICAL" ]; then
+        echo >> "${BOOT_DIR}/grub/grub.cfg"
+        generate_grub_menu _gui >> "${BOOT_DIR}/grub/grub.cfg"
+    fi
 
     # grub.cfg that is builtin into the image
 
@@ -328,6 +335,10 @@ prepare_menu_standalone() {
 
     cp -f grub/search.cfg "${ROOT_DIR}/boot/grub/grub.cfg"
     generate_grub_menu >> "${ROOT_DIR}/boot/grub/grub.cfg"
+    if [ -n "$GRAPHICAL" ]; then
+        echo >> "${ROOT_DIR}/boot/grub/grub.cfg"
+        generate_grub_menu _gui >> "${ROOT_DIR}/boot/grub/grub.cfg"
+    fi
 }
 
 generate_image_efi() {

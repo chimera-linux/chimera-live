@@ -44,16 +44,20 @@ then
 fi
 
 # extra utilities needed by live
-copy_exec /usr/bin/grep
-copy_exec /usr/bin/tail
+copy_exec /usr/bin/awk
+copy_exec /usr/bin/basename
+copy_exec /usr/bin/chmod
+copy_exec /usr/bin/cp
 copy_exec /usr/bin/cut
-copy_exec /usr/bin/tr
+copy_exec /usr/bin/du
+copy_exec /usr/bin/expr
+copy_exec /usr/bin/grep
 copy_exec /usr/bin/sed
 copy_exec /usr/bin/sort
+copy_exec /usr/bin/tail
 copy_exec /usr/bin/touch
+copy_exec /usr/bin/tr
 copy_exec /usr/bin/wc
-copy_exec /usr/bin/chmod
-copy_exec /usr/bin/basename
 
 ln -sf grep "${DESTDIR}/usr/bin/egrep"
 
