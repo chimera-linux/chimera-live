@@ -49,6 +49,21 @@ Chimera_User() {
     Chimera_Service network login
     Chimera_Service sshd boot
 
+    # enable extra gettys if needed; for serial and so on
+    for _PARAMETER in ${LIVE_BOOT_CMDLINE}; do
+        case "${_PARAMETER}" in
+            console=*)
+                case "${_PARAMETER#console=}" in
+                    *ttyS0*) Chimera_Service agetty-ttyS0 boot;;
+                    *ttyAMA0*) Chimera_Service agetty-ttyAMA0 boot;;
+                    *ttyUSB0*) Chimera_Service agetty-ttyUSB0 boot;;
+                    *hvc0*) Chimera_Service agetty-hvc0 boot;;
+                    *hvsi0*) Chimera_Service agetty-hvsi0 boot;;
+                esac
+                ;;
+        esac
+    done
+
     # enable user services
     chroot /root mkdir -p /home/anon/.config/dinit.d/boot.d
     Chimera_Userserv dbus anon
