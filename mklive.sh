@@ -58,7 +58,6 @@ Options:
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
  -p PACKAGES  List of additional packages to install.
- -g           Generate a graphical image.
  -h           Print this message.
 EOF
     exit ${1:=1}
@@ -88,11 +87,10 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@"
 }
 
-while getopts "a:gk:o:p:r:h" opt; do
+while getopts "a:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
-        g) GRAPHICAL=1;;
         k) APK_KEY="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
@@ -283,6 +281,14 @@ done
 
 # generate bootloader image
 msg "Generating bootloader image..."
+
+# check if to add graphical menu
+#
+# when adding stuff for more desktops/display managers,
+# adjust accordingly and also adjust the initramfs hooks
+if [ -f "${ROOT_DIR}/etc/dinit.d/gdm" ]; then
+    GRAPHICAL=1
+fi
 
 generate_grub_menu() {
     generate_grub_menu_base menu
