@@ -63,12 +63,6 @@ copy_exec /usr/bin/wc
 
 ln -sf grep "${DESTDIR}/usr/bin/egrep"
 
-# util-linux bits
-copy_exec /usr/bin/blockdev
-copy_exec /usr/bin/eject
-copy_exec /usr/bin/losetup
-copy_exec /usr/bin/mount
-
 # klibc dependencies
 mkdir -p ${DESTDIR}/lib/device-mapper
 for FILE in /lib/libacl* /lib/libblkid* /lib/libuuid* /lib/device-mapper/libdevmapper* /lib/libattr*
@@ -86,6 +80,12 @@ for FILE in /lib/libdevmapper*
 do
 	[ ! -L "${FILE}" ] && cp -a "${FILE}" "${DESTDIR}/${FILE}"
 done
+
+# util-linux bits
+copy_exec /usr/bin/blockdev
+copy_exec /usr/bin/eject
+copy_exec /usr/bin/losetup
+copy_exec /usr/bin/mount
 
 # udev dependencies
 if [ "${MINIMAL:-}" != "true" ] &&  [ "${MINIMAL:-}" != "yes" ]

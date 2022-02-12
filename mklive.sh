@@ -54,7 +54,8 @@ Usage: $PROGNAME [opts] [build_dir]
 Options:
  -A APK       Override the apk tool (default: apk)
  -a ARCH      Generate an image for ARCH (must be runnable on current machine)
- -o FILE      Output a FILE (chimera-linux-ARCH-YYYYMMDD.iso by default)
+ -o FILE      Output a FILE (default: chimera-linux-ARCH-YYYYMMDD(-FLAVOR).iso)
+ -f FLAVOR    Flavor name to include in default iso name
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
  -p PACKAGES  List of additional packages to install.
@@ -87,10 +88,11 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@"
 }
 
-while getopts "a:k:o:p:r:h" opt; do
+while getopts "a:f:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
+        f) FLAVOR="-$OPTARG";;
         k) APK_KEY="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
@@ -127,7 +129,7 @@ esac
 
 # default output file
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${APK_ARCH}-$(date '+%Y%m%d').iso"
+    OUT_FILE="chimera-linux-${APK_ARCH}-$(date '+%Y%m%d')${FLAVOR}.iso"
 fi
 
 if [ -z "$APK_REPO" ]; then
@@ -408,7 +410,7 @@ esac
 # clean up target root
 msg "Cleaning up target root..."
 
-run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} ${PKG_GRUB} \
+run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} \
     || die "failed to remove leftover packages"
 
 cleanup_initramfs
