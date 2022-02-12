@@ -40,11 +40,13 @@ Chimera_User() {
 
     # enable services
     Chimera_Service udevd early
+    Chimera_Service dhcpcd network
     Chimera_Service dinit-userservd login
     Chimera_Service dbus login
     Chimera_Service elogind login
     Chimera_Service polkitd login
     Chimera_Service syslog-ng login
+    Chimera_Service network login
     Chimera_Service sshd boot
 
     # enable user services
