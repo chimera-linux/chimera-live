@@ -53,6 +53,7 @@ copy_exec /usr/bin/cut
 copy_exec /usr/bin/du
 copy_exec /usr/bin/expr
 copy_exec /usr/bin/grep
+copy_exec /usr/bin/rmdir
 copy_exec /usr/bin/sed
 copy_exec /usr/bin/sha256sum
 copy_exec /usr/bin/sort
