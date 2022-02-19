@@ -32,6 +32,8 @@ cp -a /bin/live-boot "${DESTDIR}/bin"
 
 mkdir -p "${DESTDIR}/lib/live"
 cp -a /lib/live/boot "${DESTDIR}/lib/live"
+[ -d /lib/live/data ] && cp -a /lib/live/data "${DESTDIR}/lib/live"
+mkdir -p "${DESTDIR}/lib/live/data"
 
 mkdir -p "${DESTDIR}/etc/live"
 if [ -e /etc/live/boot.conf ]

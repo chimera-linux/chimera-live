@@ -233,11 +233,6 @@ if [ -z "$KERNFILE" ]; then
     die "unable to determine kernel file name"
 fi
 
-# add data files
-msg "Copying data files..."
-
-[ -f data/issue ] && cp data/issue "${ROOT_DIR}/etc"
-
 # add live-boot initramfs stuff
 msg "Copying live initramfs scripts..."
 
@@ -248,6 +243,7 @@ copy_initramfs() {
         || return 1
     cp initramfs-tools/scripts/* "${ROOT_DIR}/usr/share/initramfs-tools/scripts" \
         || return 1
+    cp -R data "${ROOT_DIR}/lib/live"
 }
 
 cleanup_initramfs() {

@@ -24,6 +24,14 @@ Chimera_User() {
     echo "127.0.0.1 $(cat /root/etc/hostname)" >> /root/etc/hosts
     echo "::1 $(cat /root/etc/hostname)" >> /root/etc/hosts
 
+    # /etc/issue
+    if [ -f "/lib/live/data/issue.in" ]; then
+        sed \
+            -e "s|@USER@|anon|g" \
+            -e "s|@PASSWORD@|chimera|g" \
+            "/lib/live/data/issue.in" > /root/etc/issue
+    fi
+
     chroot /root useradd -m -c anon -G audio,video,wheel -s "$USERSHELL" anon
 
     chroot /root sh -c 'echo "root:chimera"|chpasswd -c SHA512'

@@ -2,10 +2,10 @@
 
 Welcome to Chimera Linux. To log in, use either of:
 
-	- root:chimera
-	- anon:chimera
+	- root:@PASSWORD@
+	- @USER@:@PASSWORD@
 
-The `anon` user is in the group `wheel`, which has `doas(1)` permissions.
+The `@USER@` user is in the group `wheel`, which has `doas(1)` permissions.
 
 To install the system, please follow the documentation. This is a live
 environment that is not installable as it is. Its purpose is to provide
