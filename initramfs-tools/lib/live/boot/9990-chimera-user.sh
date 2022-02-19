@@ -39,7 +39,7 @@ Chimera_User() {
     fi
 
     # enable services
-    Chimera_Service udevd early
+    Chimera_Service udevd init
     Chimera_Service dhcpcd network
     Chimera_Service dinit-userservd login
     Chimera_Service dbus login
