@@ -17,8 +17,24 @@ Chimera_Userserv() {
 Chimera_User() {
     log_begin_msg "Setting up user"
 
+    USERNAME="anon"
+    USERPASS="chimera"
     [ -x /root/usr/bin/mksh ] && USERSHELL="/usr/bin/mksh"
     [ -z "$USERSHELL" ] && USERSHELL="/bin/sh"
+
+    for _PARAMETER in ${LIVE_BOOT_CMDLINE}; do
+        case "${_PARAMETER}" in
+            live-user=*)
+                USERNAME="${_PARAMETER#live-user=}"
+                ;;
+            live-password=*)
+                USERPASS="${_PARAMETER#live-password=}"
+                ;;
+            live-shell=*)
+                USERSHELL="${_PARAMETER#live-shell=}"
+                ;;
+        esac
+    done
 
     # hostname; prevent syslog from doing dns lookup
     echo "127.0.0.1 $(cat /root/etc/hostname)" >> /root/etc/hosts
@@ -27,15 +43,16 @@ Chimera_User() {
     # /etc/issue
     if [ -f "/lib/live/data/issue.in" ]; then
         sed \
-            -e "s|@USER@|anon|g" \
-            -e "s|@PASSWORD@|chimera|g" \
+            -e "s|@USER@|${USERNAME}|g" \
+            -e "s|@PASSWORD@|${USERPASS}|g" \
             "/lib/live/data/issue.in" > /root/etc/issue
     fi
 
-    chroot /root useradd -m -c anon -G audio,video,wheel -s "$USERSHELL" anon
+    chroot /root useradd -m -c "$USERNAME" -G audio,video,wheel \
+        -s "$USERSHELL" "$USERNAME"
 
-    chroot /root sh -c 'echo "root:chimera"|chpasswd -c SHA512'
-    chroot /root sh -c 'echo "anon:chimera"|chpasswd -c SHA512'
+    chroot /root sh -c "echo 'root:${USERPASS}'|chpasswd -c SHA512"
+    chroot /root sh -c "echo '$USERNAME:${USERPASS}'|chpasswd -c SHA512"
 
     if [ -x /root/usr/bin/doas ]; then
         echo "permit persist :wheel" >> /root/etc/doas.conf
@@ -73,13 +90,13 @@ Chimera_User() {
     done
 
     # enable user services
-    chroot /root mkdir -p /home/anon/.config/dinit.d/boot.d
-    Chimera_Userserv dbus anon
-    Chimera_Userserv pipewire-pulse anon
-    Chimera_Userserv pipewire anon
-    Chimera_Userserv wireplumber anon
+    chroot /root mkdir -p "/home/${USERNAME}/.config/dinit.d/boot.d"
+    Chimera_Userserv dbus "$USERNAME"
+    Chimera_Userserv pipewire-pulse "$USERNAME"
+    Chimera_Userserv pipewire "$USERNAME"
+    Chimera_Userserv wireplumber "$USERNAME"
     # fix up permissions
-    chroot /root chown -R anon:anon /home/anon
+    chroot /root chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
 
     log_end_msg
 }
