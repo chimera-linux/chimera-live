@@ -181,14 +181,8 @@ cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy signing key"
 # install target packages
 msg "Installing target base packages..."
 
-# bootstrap first
-run_apk "${ROOT_DIR}" --initdb add base-bootstrap \
-    || die "failed to install base-bootstrap"
-# now it's safe to run hooks too
-run_apk "${ROOT_DIR}" add base-minimal \
+run_apk "${ROOT_DIR}" --initdb add base-minimal \
     || die "failed to install base-minimal"
-# del base-bootstrap
-run_apk "${ROOT_DIR}" del base-bootstrap > /dev/null 2>&1
 
 # needs to be available before adding full package set
 msg "Mounting pseudo-filesystems..."

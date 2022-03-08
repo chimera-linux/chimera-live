@@ -13,35 +13,25 @@ is generally written around similar methods.
 
 The bootstrap process typically needs a few stages.
 
-First, install the `base-bootstrap` package into your target root. This is
-a special minimal metapackage that creates a tiny, incomplete, but working
-system and does not need to run any hooks. That is important, because the
-environment is not yet set up to run hooks until that is installed.
+Install `base-minimal` first. This metapackage is small enough that it is
+safe to install without pseudo-filesystems mounted.
 
 The `--initdb` argument is important.
 
 ```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-bootstrap
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-minimal
 ```
 
-This will install a relatively small number of packages. Such system already
-has a shell so it can be chrooted into. Of course, we want to install a real,
-mostly complete metapackage:
+The layout of `base-minimal` is set up so that it first depends on `base-bootstrap`,
+which installs a very basic set of core packages that do not require running
+any scripts. That means that by the time any scripts are executed, a reasonable
+system is already present to run them.
 
-```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main add base-minimal
-```
-
-This gets you `base-minimal`. This is already far more complete and contains
-things like `util-linux` as well as `apk-tools`.
-
-Now is a good time to copy your public key in for `apk` and delete `base-bootstrap`.
-You no longer have to pass the keys directory after that.
+Now is a good time to copy your public key in for `apk` so you do not have to pass it.
 
 ```
 # mkdir -p /my/root/etc/apk/keys
 # cp /my/cports/etc/keys/*.pub /my/root/etc/apk/keys
-# apk del --root /my/root --repository /my/cports/packages/main del base-bootstrap
 ```
 
 More advanced base metapackages may require pseudo-filesystems in their hooks.
