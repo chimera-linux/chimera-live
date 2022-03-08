@@ -46,7 +46,7 @@ If you want to install them, proceed like this:
 Then you can install e.g. `base-full` if you wish.
 
 ```
-# apk del --root /my/root --repository /my/cports/packages/main add base-full
+# apk --root /my/root --repository /my/cports/packages/main add base-full
 ```
 
 Once you are done, don't forget to clean up.
