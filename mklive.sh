@@ -172,33 +172,23 @@ WRKSRC=$(pwd)
 mkdir -p "${BOOT_DIR}" "${LIVE_DIR}" "${ROOT_DIR}" \
     || die "failed to create directories"
 
-# initialize both roots
-msg "Initializing roots..."
+# copy key
+msg "Copying signing key..."
 
-do_initdb() {
-    cd "$1"
-
-    mkdir -p dev tmp etc/apk/keys usr/lib/apk/db var/cache/apk \
-        var/cache/misc var/log || die "failed to create root dirs"
-
-    ln -sf usr/lib lib
-
-    touch usr/lib/apk/db/installed
-    touch etc/apk/world
-
-    cp "${APK_KEY}" etc/apk/keys || die "failed to copy signing key"
-    cd "${WRKSRC}"
-}
-
-do_initdb "${ROOT_DIR}"
+mkdir -p "${ROOT_DIR}/etc/apk/keys" || die "failed to create keys directory"
+cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy signing key"
 
 # install target packages
 msg "Installing target base packages..."
 
-run_apk "${ROOT_DIR}" --no-scripts add base-minimal \
-    || die "failed to install target base-minimal"
-run_apk "${ROOT_DIR}" fix base-files dash dinit-chimera \
-    || die "failed to fix up target root"
+# bootstrap first
+run_apk "${ROOT_DIR}" --initdb add base-bootstrap \
+    || die "failed to install base-bootstrap"
+# now it's safe to run hooks too
+run_apk "${ROOT_DIR}" add base-minimal \
+    || die "failed to install base-minimal"
+# del base-bootstrap
+run_apk "${ROOT_DIR}" del base-bootstrap > /dev/null 2>&1
 
 # needs to be available before adding full package set
 msg "Mounting pseudo-filesystems..."
@@ -406,7 +396,7 @@ esac
 # clean up target root
 msg "Cleaning up target root..."
 
-run_apk "${ROOT_DIR}" del base-minimal ${PKG_BOOT} \
+run_apk "${ROOT_DIR}" del ${PKG_BOOT} \
     || die "failed to remove leftover packages"
 
 cleanup_initramfs
