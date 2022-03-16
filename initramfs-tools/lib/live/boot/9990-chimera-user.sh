@@ -63,7 +63,7 @@ Chimera_User() {
         echo "%wheel ALL=(ALL) ALL" >> /root/etc/sudoers
     fi
 
-    # enable services
+    # enable default services
     Chimera_Service udevd init
     Chimera_Service dhcpcd network
     Chimera_Service dinit-userservd login
@@ -72,9 +72,9 @@ Chimera_User() {
     Chimera_Service polkitd login
     Chimera_Service syslog-ng login
     Chimera_Service network login
-    Chimera_Service sshd boot
 
     # enable extra gettys if needed; for serial and so on
+    # also enable extra services if requested
     for _PARAMETER in ${LIVE_BOOT_CMDLINE}; do
         case "${_PARAMETER}" in
             console=*)
@@ -85,6 +85,14 @@ Chimera_User() {
                     *hvc0*) Chimera_Service agetty-hvc0 boot;;
                     *hvsi0*) Chimera_Service agetty-hvsi0 boot;;
                 esac
+                ;;
+            services=*)
+                SERVICES="${_PARAMETER#services=}"
+                IFS=,
+                for srv in ${SERVICES}; do
+                    Chimera_Service "${srv}" boot
+                done
+                unset IFS
                 ;;
         esac
     done
