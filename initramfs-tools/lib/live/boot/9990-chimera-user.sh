@@ -48,6 +48,12 @@ Chimera_User() {
             "/lib/live/data/issue.in" > /root/etc/issue
     fi
 
+    # chimera-live-install
+    if [ -f "/lib/live/data/chimera-live-install" ]; then
+        cp /lib/live/data/chimera-live-install /root/usr/bin
+        chmod 755 /root/usr/bin/chimera-live-install
+    fi
+
     chroot /root useradd -m -c "$USERNAME" -G audio,video,wheel \
         -s "$USERSHELL" "$USERNAME"
 

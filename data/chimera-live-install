@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# Chimera Linux local installation tool
+#
+# Copyright 2022 Daniel "q66" Kolesa
+#
+# License: BSD-2-Clause
+#
+# This simple script copies the root file system without live-related changes
+# into a writable directory. That effectively installs a system with a package
+# set equivalent to what's on the live media on your computer.
+#
+# This is not an installer. You are expected to perform the installation by
+# yourself, this merely helps you populate the file system if you do not want
+# to install from the network.
+#
+
+readonly PROGNAME=$(basename "$0")
+readonly SRC_ROOT="/run/live/rootfs/filesystem.squashfs"
+
+usage() {
+    cat <<EOF
+Usage: $PROGNAME target_directory
+
+This program copies the entire Chimera root file system with the package set
+present on this live media into the given directory. The given directory must
+be writable and empty.
+
+The sole purpose of this is to allow local installations (without network),
+but it is not a full installer.
+EOF
+    exit 1
+}
+
+# ensure source exists
+if [ ! -d "${SRC_ROOT}" ]; then
+    echo "ERROR: Source root does not exist. Please run this on live media."
+    exit 1
+fi
+
+# ensure the target exists
+if [ ! -d "$1" ]; then
+    echo "ERROR: The target directory does not exist."
+    usage
+fi
+
+# ensure the target is writable
+if ! touch "${1}/.write-test"; then
+    echo "ERROR: The target directory is not writable."
+    usage
+else
+    rm -f "${1}/.write-test"
+fi
+
+# ensure it's empty
+for x in "${1}/"*; do
+    if [ -e "${x}" ]; then
+        echo "ERROR: The target directory is not empty."
+        usage
+    else
+        break
+    fi
+done
+
+echo "Copying system to ${1}..."
+
+if ! cp -a "${SRC_ROOT}/"* "${1}"; then
+    echo "ERROR: Failed to copy the system."
+    exit 1
+fi
+
+echo "Updating initramfs in ${1}..."
+
+if ! chroot "${1}" update-initramfs -k all -c; then
+    echo "ERROR: Failed to create target initramfs."
+    echo "You will need to perform initramfs creation manually."
+fi
+
+echo "Chimera successfully copied in ${1}."
+echo "Please perform all post-installation steps now (bootloader etc.)"
+
+exit 0
