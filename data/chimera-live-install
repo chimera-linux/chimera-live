@@ -32,6 +32,12 @@ EOF
     exit 1
 }
 
+# ensure we run as root
+if [ "$(id -u)" != "0" ]; then
+    echo "ERROR: Must run this as root."
+    exit 1
+fi
+
 # ensure source exists
 if [ ! -d "${SRC_ROOT}" ]; then
     echo "ERROR: Source root does not exist. Please run this on live media."
@@ -64,7 +70,9 @@ done
 
 echo "Copying system to ${1}..."
 
-if ! cp -a "${SRC_ROOT}/"* "${1}"; then
+tar -cf - -C "${SRC_ROOT}" . | tar -xpf - -C "${1}"
+
+if [ $? -ne 0 ]; then
     echo "ERROR: Failed to copy the system."
     exit 1
 fi
