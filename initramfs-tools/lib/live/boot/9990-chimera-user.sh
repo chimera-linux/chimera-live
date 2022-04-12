@@ -54,19 +54,18 @@ Chimera_User() {
         chmod 755 /root/usr/bin/chimera-live-install
     fi
 
-    chroot /root useradd -m -c "$USERNAME" -G audio,video,wheel \
-        -s "$USERSHELL" "$USERNAME"
+    chroot /root useradd -m -c "$USERNAME" -s "$USERSHELL" "$USERNAME"
 
     chroot /root sh -c "echo 'root:${USERPASS}'|chpasswd -c SHA512"
     chroot /root sh -c "echo '$USERNAME:${USERPASS}'|chpasswd -c SHA512"
 
     if [ -x /root/usr/bin/doas ]; then
-        echo "permit persist :wheel" >> /root/etc/doas.conf
+        echo "permit persist anon" >> /root/etc/doas.conf
         chmod 600 /root/etc/doas.conf
     fi
 
     if [ -f /root/etc/sudoers ]; then
-        echo "%wheel ALL=(ALL) ALL" >> /root/etc/sudoers
+        echo "anon ALL=(ALL) ALL" >> /root/etc/sudoers
     fi
 
     # enable default services
