@@ -13,13 +13,24 @@ is generally written around similar methods.
 
 The bootstrap process typically needs a few stages.
 
-Install `base-minimal` first. This metapackage is small enough that it is
-safe to install without pseudo-filesystems mounted.
+Install `base-files` first. This is needed because of limitations of the
+current `apk` version (`apk` will read the `passwd` and `group` files from
+the target root to set file permissions, so this needs to be available
+ahead of time).
 
-The `--initdb` argument is important.
+The `--initdb` argument is important. You also need to fix up its permissions
+manually.
 
 ```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-minimal
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-files
+# chown -R root:root /my/root
+```
+
+Then you can install `base-minimal`. This is small enough that it is safe to
+install without pseudo-filesystems mounted.
+
+```
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main add base-minimal
 ```
 
 The layout of `base-minimal` is set up so that it first depends on `base-bootstrap`,
@@ -41,6 +52,7 @@ If you want to install them, proceed like this:
 # mount -t proc none /my/root/proc
 # mount -t sysfs none /my/root/sys
 # mount -t devtmpfs none /my/root/dev
+# mount --bind /tmp /my/root/tmp
 ```
 
 Then you can install e.g. `base-full` if you wish.
@@ -52,11 +64,13 @@ Then you can install e.g. `base-full` if you wish.
 Once you are done, don't forget to clean up.
 
 ```
+# umount /my/root/tmp
 # umount /my/root/dev
 # umount /my/root/sys
 # umount /my/root/proc
-# rm -rf /my/root/run /my/root/tmp /my/root/var/cache /my/root/var/run
-# mkdir -p /my/root/run /my/root/tmp /my/root/var/cache /my/root/var/run
+# rm -rf /my/root/run /my/root/var/tmp /my/root/var/cache
+# mkdir -p /my/root/run /my/root/var/tmp /my/root/var/cache
+# chmod 777 /my/root/var/tmp
 ```
 
 That's basically all. You can install whatever else you want, of course.
