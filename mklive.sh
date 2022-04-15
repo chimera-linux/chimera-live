@@ -417,8 +417,8 @@ msg "Generating squashfs filesystem..."
 
 umount_pseudo
 
-gensquashfs --pack-dir "${ROOT_DIR}" -c xz "${LIVE_DIR}/filesystem.squashfs" \
-    || die "gensquashfs failed"
+gensquashfs --pack-dir "${ROOT_DIR}" -c xz -k -x \
+    "${LIVE_DIR}/filesystem.squashfs" || die "gensquashfs failed"
 
 # generate iso image
 msg "Generating ISO image..."
