@@ -408,7 +408,7 @@ cleanup_dirs() {
     done
 }
 
-cleanup_dirs tmp var/cache var/tmp var/run
+cleanup_dirs run tmp var/cache var/tmp
 
 chmod 777 "${ROOT_DIR}/tmp"
 chmod 777 "${ROOT_DIR}/var/tmp"
