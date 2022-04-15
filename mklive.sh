@@ -408,7 +408,10 @@ cleanup_dirs() {
     done
 }
 
-cleanup_dirs run tmp var/cache var/tmp var/run
+cleanup_dirs tmp var/cache var/tmp var/run
+
+chmod 777 "${ROOT_DIR}/tmp"
+chmod 777 "${ROOT_DIR}/var/tmp"
 
 # clean up pointless ramdisk(s)
 for f in "${ROOT_DIR}/boot/"initrd*; do
