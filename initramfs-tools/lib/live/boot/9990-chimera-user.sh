@@ -4,7 +4,7 @@
 
 Chimera_Service() {
     if [ -f /root/etc/dinit.d/$1 ]; then
-        ln -sf ../$1 /root/etc/dinit.d/$2.d/$1
+        ln -sf ../$1 /root/etc/dinit.d/boot.d/$1
     fi
 }
 
@@ -69,14 +69,13 @@ Chimera_User() {
     fi
 
     # enable default services
-    Chimera_Service udevd init
-    Chimera_Service dhcpcd network
-    Chimera_Service dinit-userservd login
-    Chimera_Service dbus login
-    Chimera_Service elogind login
-    Chimera_Service polkitd login
-    Chimera_Service syslog-ng login
-    Chimera_Service network login
+    Chimera_Service udevd
+    Chimera_Service dhcpcd
+    Chimera_Service dinit-userservd
+    Chimera_Service dbus
+    Chimera_Service elogind
+    Chimera_Service polkitd
+    Chimera_Service syslog-ng
 
     # enable extra gettys if needed; for serial and so on
     # also enable extra services if requested
@@ -84,18 +83,18 @@ Chimera_User() {
         case "${_PARAMETER}" in
             console=*)
                 case "${_PARAMETER#console=}" in
-                    *ttyS0*) Chimera_Service agetty-ttyS0 boot;;
-                    *ttyAMA0*) Chimera_Service agetty-ttyAMA0 boot;;
-                    *ttyUSB0*) Chimera_Service agetty-ttyUSB0 boot;;
-                    *hvc0*) Chimera_Service agetty-hvc0 boot;;
-                    *hvsi0*) Chimera_Service agetty-hvsi0 boot;;
+                    *ttyS0*) Chimera_Service agetty-ttyS0;;
+                    *ttyAMA0*) Chimera_Service agetty-ttyAMA0;;
+                    *ttyUSB0*) Chimera_Service agetty-ttyUSB0;;
+                    *hvc0*) Chimera_Service agetty-hvc0;;
+                    *hvsi0*) Chimera_Service agetty-hvsi0;;
                 esac
                 ;;
             services=*)
                 SERVICES="${_PARAMETER#services=}"
                 IFS=,
                 for srv in ${SERVICES}; do
-                    Chimera_Service "${srv}" boot
+                    Chimera_Service "${srv}"
                 done
                 unset IFS
                 ;;

@@ -20,7 +20,7 @@ Chimera_Graphical() {
 
     if [ -f "/root/etc/dinit.d/gdm" ]; then
         # enable service
-        Chimera_Service gdm boot
+        Chimera_Service gdm
         # autologin
         cat > /root/etc/gdm/custom.conf << EOF
 [daemon]
