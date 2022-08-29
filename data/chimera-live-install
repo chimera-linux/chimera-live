@@ -61,6 +61,12 @@ fi
 # ensure it's empty
 for x in "${1}/"*; do
     if [ -e "${x}" ]; then
+        dirn=$(basename "${x}")
+        if [ "${dirn}" = "lost+found" ]; then
+            # special case
+            unset dirn
+            continue
+        fi
         echo "ERROR: The target directory is not empty."
         usage
     else
