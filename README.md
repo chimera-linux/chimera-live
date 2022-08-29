@@ -2,8 +2,16 @@
 
 This repository contains tooling to manage creation of Chimera images.
 
-Currently this just means live ISO images, but later also rootfs tarballs,
-pre-made SBC board SD card images and so on.
+This consists of the following scripts right now:
+
+* `mklive.sh` - the live ISO image creator for BIOS, EFI and POWER/PowerPC systems
+* `mkrootfs.sh` - root filesystem tarball creator
+
+And the following auxiliary scripts:
+
+* `mklive-image.sh` - wrapper around `mklive.sh` to create standardized images
+
+More tools may be added over time.
 
 ## Bootstrapping the system with apk
 
