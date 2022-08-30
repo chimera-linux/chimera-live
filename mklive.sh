@@ -100,12 +100,13 @@ if [ -z "$OUT_FILE" ]; then
 fi
 
 if [ -z "$APK_REPO" ]; then
-    die "must provide at least one valid repository"
+    APK_REPO="--repository https://repo.chimera-linux.org/current/main"
 fi
 
 for f in ${APK_REPO}; do
     case "$f" in
         --repository) ;;
+        http*) ;;
         *)
             if [ ! -f "${f}/${APK_ARCH}/APKINDEX.tar.gz" ]; then
                 die "invalid repository ${f}"
@@ -114,7 +115,11 @@ for f in ${APK_REPO}; do
     esac
 done
 
-if [ -z "$APK_KEY" -o ! -f "$APK_KEY" ]; then
+if [ -z "$APK_KEY" ]; then
+    APK_KEY="keys/q66@chimera-linux.org-61a1913b.rsa.pub"
+fi
+
+if [ ! -f "$APK_KEY" ]; then
     die "must provide a valid public key"
 fi
 
