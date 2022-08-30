@@ -13,7 +13,6 @@
 
 . ./lib.sh
 
-readonly PROGNAME=$(basename "$0")
 readonly PKG_BOOT="openresolv device-mapper xz"
 readonly PKG_ROOT="base-full linux"
 
