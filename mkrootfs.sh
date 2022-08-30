@@ -9,8 +9,7 @@
 
 . ./lib.sh
 
-readonly PKG_ROOT="base-core"
-
+PKG_BASE="base-core"
 ROOT_DIR="build"
 
 usage() {
@@ -20,7 +19,9 @@ Usage: $PROGNAME [opts] [ROOT_DIR]
 Options:
  -A APK       Override the apk tool (default: apk)
  -a ARCH      Generate an image for ARCH (must be runnable on current machine)
- -o FILE      Output a FILE (default: chimera-linux-ARCH-ROOTFS-YYYYMMDD.tar.gz)
+ -b PACKAGE   The base package (default: base-core)
+ -o FILE      Output a FILE (default: chimera-linux-ARCH-ROOTFS-YYYYMMDD(-FLAVOR).tar.gz)
+ -f FLAVOR    Flavor name to include in default output file name
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
  -p PACKAGES  List of additional packages to install.
@@ -45,10 +46,12 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@"
 }
 
-while getopts "a:k:o:p:r:h" opt; do
+while getopts "a:b:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
+        b) PKG_BASE="$OPTARG";;
+        f) FLAVOR="-$OPTARG";;
         k) APK_KEY="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
@@ -63,7 +66,7 @@ shift $((OPTIND - 1))
 
 # default output file
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${APK_ARCH}-ROOTFS-$(date '+%Y%m%d').tar.gz"
+    OUT_FILE="chimera-linux-${APK_ARCH}-ROOTFS-$(date '+%Y%m%d')${FLAVOR}.tar.gz"
 fi
 
 if [ -z "$APK_REPO" ]; then
@@ -121,7 +124,7 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add ${PKG_ROOT} ${PACKAGES} \
+run_apk "${ROOT_DIR}" add ${PKG_BASE} ${PACKAGES} \
     || die "failed to install full rootfs"
 
 umount_pseudo
