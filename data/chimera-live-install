@@ -29,8 +29,12 @@ be writable and empty.
 The sole purpose of this is to allow local installations (without network),
 but it is not a full installer.
 EOF
-    exit 1
+    exit ${1:=1}
 }
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage 0
+fi
 
 # ensure we run as root
 if [ "$(id -u)" != "0" ]; then
