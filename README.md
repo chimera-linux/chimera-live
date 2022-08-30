@@ -82,3 +82,47 @@ Once you are done, don't forget to clean up.
 ```
 
 That's basically all. You can install whatever else you want, of course.
+
+## Creating live images with mklive-image.sh and mklive.sh
+
+The `mklive-image.sh` script is a high level wrapper around `mklive.sh`.
+
+Its basic usage is like this (as root):
+
+```
+# ./mklive-image.sh -b base
+```
+
+It only takes two optional arguments, `-b IMAGE` and `-p EXTRA_PACKAGES`.
+The `IMAGE` is the supported image type (currently `base` for base console-only
+images and `gnome` for graphical GNOME images). The other argument lets you
+install packages in addition to the set provided by `IMAGE`.
+
+You can also pass-through additional arguments to `mklive.sh` by specifying
+them after `--`, e.g. `./mklive-image.sh -b base -- -f myflavor ...`.
+
+It is also possible to use `mklive.sh` raw. You can get the full listing of
+supported arguments like this:
+
+```
+# ./mklive.sh -h
+```
+
+Invoking `mklive.sh` with no arguments will generate a basic ISO for the
+current architecture, using remote repositories. The `base-full` metapackage
+serves as the base package. Note that this is not equivalent to the `base` image
+of `mklive-image.sh`, as that contains some additional packages.
+
+You can specify arguments to do things such as using your own repos with your own
+signing key, additional packages and so on.
+
+## Creating rootfs tarballs with mkrootfs.sh
+
+The `mkrootfs.sh` script takes largely identical arguments to `mklive.sh` (see `-h`)
+but instead of ISO images, it creates root file system tarballs. Running it without
+arguments will create a basic root file system tarball using remote repositories.
+The `base-core` metapackage is the default, but you can override it, e.g.
+
+```
+# ./mkrootfs.sh -b base-minimal
+```
