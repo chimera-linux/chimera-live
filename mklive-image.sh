@@ -33,6 +33,8 @@ case "$IMAGE" in
         ;;
     *)
         echo "unknown image type: $IMAGE"
+        echo
+        echo "supported image types: base gnome"
         exit 1
         ;;
 esac
