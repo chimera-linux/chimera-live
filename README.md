@@ -10,6 +10,8 @@ This consists of the following scripts right now:
 And the following auxiliary scripts:
 
 * `mklive-image.sh` - wrapper around `mklive.sh` to create standardized images
+* `mkrootfs-platform.sh` - wrapper around `mkrootfs.sh` to create standardized
+  rootfs tarballs
 
 More tools may be added over time.
 
@@ -116,7 +118,20 @@ of `mklive-image.sh`, as that contains some additional packages.
 You can specify arguments to do things such as using your own repos with your own
 signing key, additional packages and so on.
 
-## Creating rootfs tarballs with mkrootfs.sh
+## Creating rootfs tarballs with mkrootfs-platform.sh and mkrootfs.sh
+
+The `mkrootfs-platform.sh` script is a high level wrapper around `mkrootfs.sh`.
+
+Its basic usage is like this (as root):
+
+```
+# ./mkrootfs-platform.sh -P rpi4
+```
+
+It only takes two optional arguments, `-P PLATFORM` and `-p EXTRA_PACKAGES`.
+The `PLATFORM` is the supported platform type (represented by`core` which is the
+`mkrootfs.sh` default of using `base-core`, `minimal` which uses `base-minimal`
+and then device-specific platform images such as `rpi3`, `rpi4` and `pbp`).
 
 The `mkrootfs.sh` script takes largely identical arguments to `mklive.sh` (see `-h`)
 but instead of ISO images, it creates root file system tarballs. Running it without
