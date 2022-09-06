@@ -215,8 +215,8 @@ case "$ROOT_FSTYPE" in
     *) _fpassn="1";;
 esac
 
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${_fpassn}" >> "${ROOTFS}/etc/fstab"
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "${ROOTFS}/etc/fstab"
+echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${_fpassn}" >> "${ROOT_DIR}/etc/fstab"
+echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "${ROOT_DIR}/etc/fstab"
 
 msg "Setting up bootloader..."
 

@@ -125,7 +125,7 @@ The `mkrootfs-platform.sh` script is a high level wrapper around `mkrootfs.sh`.
 Its basic usage is like this (as root):
 
 ```
-# ./mkrootfs-platform.sh -P rpi4
+# ./mkrootfs-platform.sh -P rpi
 ```
 
 It only takes two optional arguments, `-P PLATFORM` and `-p EXTRA_PACKAGES`.
