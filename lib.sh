@@ -18,6 +18,7 @@ mount_pseudo() {
 }
 
 umount_pseudo() {
+    [ -z "$ROOT_DIR" ] && return 0
     umount -f "${ROOT_DIR}/dev" > /dev/null 2>&1
     umount -f "${ROOT_DIR}/proc" > /dev/null 2>&1
     umount -f "${ROOT_DIR}/sys" > /dev/null 2>&1

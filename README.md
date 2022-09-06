@@ -131,7 +131,7 @@ Its basic usage is like this (as root):
 It only takes two optional arguments, `-P PLATFORM` and `-p EXTRA_PACKAGES`.
 The `PLATFORM` is the supported platform type (represented by`core` which is the
 `mkrootfs.sh` default of using `base-core`, `minimal` which uses `base-minimal`
-and then device-specific platform images such as `rpi3`, `rpi4` and `pbp`).
+and then device-specific platform images such as `rpi` and `pbp`).
 
 The `mkrootfs.sh` script takes largely identical arguments to `mklive.sh` (see `-h`)
 but instead of ISO images, it creates root file system tarballs. Running it without
