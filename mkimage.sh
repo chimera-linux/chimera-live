@@ -95,8 +95,6 @@ if [ $? -ne 0 ]; then
     die "failed to create root directory"
 fi
 
-shift
-
 if [ -z "$PLATFORM" ]; then
     PLATFORM="${IN_FILE##*-}"
     PLATFORM="${PLATFORM%%.*}"
@@ -117,7 +115,13 @@ if [ -z "$OUT_FILE" ]; then
     OUT_FILE="chimera-linux-${PLATFORM}-$(date '+%Y%m%d').img"
 fi
 
-readonly CHECK_TOOLS="truncate sfdisk kpartx tar"
+readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
+
+for tool in ${CHECK_TOOLS}; do
+    if ! command -v $tool > /dev/null 2>&1; then
+        die "missing tool: $tool"
+    fi
+done
 
 msg "Creating disk image..."
 
@@ -180,10 +184,13 @@ if [ -z "$LOOP_DEV" ]; then
     die "failed to identify loop device"
 fi
 
-mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_DEV}p1" > /dev/null 2>&1 \
+# make into a real path
+LOOP_DEV="/dev/mapper/${LOOP_DEV}"
+
+mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_DEV}p1" \
     || die "failed to create boot file system"
 
-mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_DEV}p2" > /dev/null 2>&1 \
+mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_DEV}p2" \
     || die "failed to create root file system"
 
 mount "${LOOP_DEV}p2" "${ROOT_DIR}" || die "failed to mount root file system"
@@ -219,6 +226,20 @@ case "$PLATFORM" in
             of="$LOOP_DEV" seek=64 conv=notrunc,fsync > /dev/null 2>&1
         dd if="${ROOT_DIR}/usr/lib/u-boot-pbp/u-boot.itb" \
             of="$LOOP_DEV" seek=16384 conv=notrunc,fsync > /dev/null 2>&1
+        ;;
+esac
+
+echo "Finalizing..."
+
+echo root:chimera | chpasswd -c SHA512 -R "${ROOT_DIR}"
+
+echo chimera > "${ROOT_DIR}/etc/hostname"
+echo 127.0.0.1 chimera >> "${ROOT_DIR}/etc/hosts"
+echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
+
+case "$PLATFORM" in
+    rpi) ln -s "../agetty-ttyAMA0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
+esac
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
 kpartx -dv "$OUT_FILE" || die "failed to detach loop device"
