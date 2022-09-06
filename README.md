@@ -6,6 +6,7 @@ This consists of the following scripts right now:
 
 * `mklive.sh` - the live ISO image creator for BIOS, EFI and POWER/PowerPC systems
 * `mkrootfs.sh` - root filesystem tarball creator
+* `mkimage.sh` - device image creator
 
 And the following auxiliary scripts:
 
@@ -141,3 +142,23 @@ The `base-core` metapackage is the default, but you can override it, e.g.
 ```
 # ./mkrootfs.sh -b base-minimal
 ```
+
+## Creating device images with mkimage.sh
+
+The `mkimage.sh` script creates device images from platform tarballs. The simplest
+usage looks like this:
+
+```
+# ./mkimage.sh chimera-linux-aarch64-ROOTFS-20220906-rpi.tar.gz
+```
+
+It by default autodetects the device type from the filename. Then it creates a device
+image that you can directly write onto removable media (e.g. an SD card for Raspberry
+Pi). The image normally contains 2 partitions (by default, a 256MiB `/boot` `vfat`
+and the rest an `ext4` partition for `/`, the total being 2GiB). The file system
+types and sizes can be overridden, as can the device type.
+
+After partition setup, it unpacks the rootfs tarball and performs additional setup
+that is device-specific, typically bootloader setup. It also sets a default hostname,
+root password (`chimera`) and enables services necessary for initial function (e.g.
+`agetty` for serial console). The output is a `gzip`-compressed image.
