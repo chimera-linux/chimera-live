@@ -71,6 +71,7 @@ fi
 
 if [ -z "$APK_REPO" ]; then
     APK_REPO="--repository https://repo.chimera-linux.org/current/main"
+    APK_REPO="$APK_REPO --repository https://repo.chimera-linux.org/current/contrib"
 fi
 
 for f in ${APK_REPO}; do
