@@ -222,10 +222,12 @@ msg "Setting up bootloader..."
 
 case "$PLATFORM" in
     pbp)
-        dd if="${ROOT_DIR}/usr/lib/u-boot-pbp/idbloader.img" \
-            of="$LOOP_DEV" seek=64 conv=notrunc,fsync > /dev/null 2>&1
-        dd if="${ROOT_DIR}/usr/lib/u-boot-pbp/u-boot.itb" \
-            of="$LOOP_DEV" seek=16384 conv=notrunc,fsync > /dev/null 2>&1
+        dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/idbloader.img" \
+            of="$LOOP_DEV" seek=64 conv=notrunc,fsync > /dev/null 2>&1 \
+                || die "failed to flash idbloader.img"
+        dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/u-boot.itb" \
+            of="$LOOP_DEV" seek=16384 conv=notrunc,fsync > /dev/null 2>&1 \
+                || die "failed to flash u-boot.itb"
         ;;
 esac
 
@@ -239,6 +241,7 @@ echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
 
 case "$PLATFORM" in
     rpi) ln -s "../agetty-ttyAMA0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
+    pbp) ln -s "../agetty-ttyS2" "${ROOT_DIR}/etc/dinit.d/boot.d";;
 esac
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
