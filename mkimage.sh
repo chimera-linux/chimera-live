@@ -185,20 +185,20 @@ if [ -z "$LOOP_DEV" ]; then
 fi
 
 # make into a real path
-LOOP_DEV="/dev/mapper/${LOOP_DEV}"
+LOOP_PART="/dev/mapper/${LOOP_DEV}p"
 
-mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_DEV}p1" \
+mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_PART}1" \
     || die "failed to create boot file system"
 
-mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_DEV}p2" \
+mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_PART}2" \
     || die "failed to create root file system"
 
-mount "${LOOP_DEV}p2" "${ROOT_DIR}" || die "failed to mount root file system"
+mount "${LOOP_PART}2" "${ROOT_DIR}" || die "failed to mount root file system"
 mkdir -p "${ROOT_DIR}/boot"
-mount "${LOOP_DEV}p1" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
+mount "${LOOP_PART}1" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
 
-BOOT_UUID=$(blkid -o value -s UUID "${LOOP_DEV}p1")
-ROOT_UUID=$(blkid -o value -s UUID "${LOOP_DEV}p2")
+BOOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}1")
+ROOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}2")
 
 msg "Unpacking rootfs tarball..."
 
@@ -223,10 +223,10 @@ msg "Setting up bootloader..."
 case "$PLATFORM" in
     pbp)
         dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/idbloader.img" \
-            of="$LOOP_DEV" seek=64 conv=notrunc,fsync > /dev/null 2>&1 \
+            of="/dev/${LOOP_DEV}" seek=64 conv=notrunc,fsync > /dev/null 2>&1 \
                 || die "failed to flash idbloader.img"
         dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/u-boot.itb" \
-            of="$LOOP_DEV" seek=16384 conv=notrunc,fsync > /dev/null 2>&1 \
+            of="/dev/${LOOP_DEV}" seek=16384 conv=notrunc,fsync > /dev/null 2>&1 \
                 || die "failed to flash u-boot.itb"
         ;;
 esac
