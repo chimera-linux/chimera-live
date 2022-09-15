@@ -136,6 +136,6 @@ run_apk "${ROOT_DIR}" add ${PKG_BASE} ${PACKAGES} \
 umount_pseudo
 
 msg "Generating root filesystem tarball..."
-tar -C "${ROOT_DIR}" -cvpf "${OUT_FILE}" . || die "tar failed"
+tar -C "${ROOT_DIR}" -cvpzf "${OUT_FILE}" . || die "tar failed"
 
 msg "Successfully generated tarball (${OUT_FILE})"
