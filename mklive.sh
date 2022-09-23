@@ -252,7 +252,6 @@ if [ -f "${ROOT_DIR}/etc/dinit.d/gdm" ]; then
 fi
 
 generate_grub_menu() {
-    generate_grub_menu_base menu
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
      -e "s|@@KERNFILE@@|${KERNFILE}|g" \
