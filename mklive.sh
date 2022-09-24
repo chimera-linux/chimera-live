@@ -362,7 +362,7 @@ case "${APK_ARCH}" in
     ppc*) generate_grub_ppc;;
     x86*) generate_grub_x86;;
     aarch64*) generate_grub_efi arm64 aa64;;
-    riscv64*) generate_grub_efi riscv64 rv64;;
+    riscv64*) generate_grub_efi riscv64 riscv64;;
 esac
 
 # clean up target root
