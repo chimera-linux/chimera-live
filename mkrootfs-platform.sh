@@ -29,7 +29,6 @@ case "$PLATFORM" in
     core)      BASE_PKG="base-core" ;;
     minimal)   BASE_PKG="base-minimal" ;;
     rpi)       PLAT_PKG="base-rpi" ;;
-    rpi)       PLAT_PKG="base-rpi" ;;
     pbp)       PLAT_PKG="base-pbp" ;;
     unmatched) PLAT_PKG="base-unmatched" ;;
     *)
