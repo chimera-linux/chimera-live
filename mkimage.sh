@@ -222,10 +222,10 @@ msg "Setting up bootloader..."
 
 case "$PLATFORM" in
     pbp)
-        dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/idbloader.img" \
+        dd if="${ROOT_DIR}/usr/lib/u-boot/pinebook-pro-rk3399/idbloader.img" \
             of="/dev/${LOOP_DEV}" seek=64 conv=notrunc,fsync > /dev/null 2>&1 \
                 || die "failed to flash idbloader.img"
-        dd if="${ROOT_DIR}/usr/lib/u-boot/pbp-rk3399/u-boot.itb" \
+        dd if="${ROOT_DIR}/usr/lib/u-boot/pinebook-pro-rk3399/u-boot.itb" \
             of="/dev/${LOOP_DEV}" seek=16384 conv=notrunc,fsync > /dev/null 2>&1 \
                 || die "failed to flash u-boot.itb"
         ;;
