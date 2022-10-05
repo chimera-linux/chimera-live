@@ -45,7 +45,7 @@ usage() {
     cat <<EOF
 Usage: $PROGNAME [opts] tarball
 
-Currently available platforms: rpi pbp
+Currently available platforms: rpi pbp unmatched
 
 The platform name is inferred from the input rootfs name.
 
@@ -101,7 +101,7 @@ if [ -z "$PLATFORM" ]; then
 fi
 
 case "$PLATFORM" in
-    rpi|pbp) ;;
+    rpi|pbp|unmatched) ;;
     *) die "unknown platform: $PLATFORM" ;;
 esac
 
@@ -157,6 +157,18 @@ unit: sectors
 first-lba: 32768
 name=boot, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
 name=root,                      type=L
+EOF
+    ;;
+    unmatched)
+        # hifive unmatched needs gpt and spl/uboot need special partitions
+        sfdisk "$OUT_FILE" << EOF
+label: gpt
+unit: sectors
+first-lba: 34
+name=spl,   start=34,    size=2048,           type=5B193300-FC78-40CD-8002-E86C45580B47
+name=uboot, start=2082,  size=8192,           type=2E54B353-1271-4842-806F-E436D6AF6985
+name=boot,  start=16384, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
+name=root,                                    type=L
 EOF
     ;;
     *)
@@ -220,14 +232,20 @@ echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "${ROOT_DIR}/etc/fstab
 
 msg "Setting up bootloader..."
 
+flash_file() {
+    dd if="${ROOT_DIR}/usr/lib/u-boot/$1" of="/dev/${LOOP_DEV}" seek=$2 \
+        conv=notrunc,fsync > /dev/null 2>&1 \
+            || die "failed to flash $1"
+}
+
 case "$PLATFORM" in
     pbp)
-        dd if="${ROOT_DIR}/usr/lib/u-boot/pinebook-pro-rk3399/idbloader.img" \
-            of="/dev/${LOOP_DEV}" seek=64 conv=notrunc,fsync > /dev/null 2>&1 \
-                || die "failed to flash idbloader.img"
-        dd if="${ROOT_DIR}/usr/lib/u-boot/pinebook-pro-rk3399/u-boot.itb" \
-            of="/dev/${LOOP_DEV}" seek=16384 conv=notrunc,fsync > /dev/null 2>&1 \
-                || die "failed to flash u-boot.itb"
+        flash_file pinebook-pro-rk3399/idbloader.img 64
+        flash_file pinebook-pro-rk3399/u-boot.itb 16384
+        ;;
+    unmatched)
+        flash_file sifive_unmatched/u-boot-spl.bin 34
+        flash_file sifive_unmatched/u-boot.itb 2082
         ;;
 esac
 
@@ -242,6 +260,7 @@ echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
 case "$PLATFORM" in
     rpi) ln -s "../agetty-ttyAMA0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
     pbp) ln -s "../agetty-ttyS2" "${ROOT_DIR}/etc/dinit.d/boot.d";;
+    unmatched) ln -s "../agetty-ttySIF0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
 esac
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
