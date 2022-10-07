@@ -125,6 +125,11 @@ if [ -n "$1" ]; then
     BUILD_DIR="$1"
 fi
 
+if [ -d "$BUILD_DIR" ]; then
+    die "$BUILD_DIR already exists"
+fi
+mkdir -p "$BUILD_DIR"
+
 # make absolute so that we aren't prone to bad cleanup with changed cwd
 BUILD_DIR=$(realpath "$BUILD_DIR")
 
@@ -132,10 +137,6 @@ IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"
 BOOT_DIR="${IMAGE_DIR}/boot"
 LIVE_DIR="${IMAGE_DIR}/live"
-
-if [ -d "$BUILD_DIR" ]; then
-    die "$BUILD_DIR already exists"
-fi
 
 WRKSRC=$(pwd)
 
