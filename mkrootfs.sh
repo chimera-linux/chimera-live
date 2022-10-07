@@ -98,14 +98,14 @@ if [ -n "$1" ]; then
     ROOT_DIR="$1"
 fi
 
-# make absolute so that we aren't prone to bad cleanup with changed cwd
-ROOT_DIR=$(realpath "$ROOT_DIR")
-
 if [ -d "$ROOT_DIR" ]; then
     die "$ROOT_DIR already exists"
 fi
 
 mkdir -p "${ROOT_DIR}" || die "failed to create directory"
+
+# make absolute so that we aren't prone to bad cleanup with changed cwd
+ROOT_DIR=$(realpath "$ROOT_DIR")
 
 # copy key
 msg "Copying signing key..."
