@@ -83,13 +83,10 @@ esac
 case "$PKG_GRUB" in
     *-efi*)
         if ! command -v mkfs.vfat > /dev/null 2>&1; then
-            die "cannot create FAT filesystems"
+            die "cannot create FAT filesystems - mkfs.vfat needs to be installed (dosfstools)"
         fi
-        if ! command -v mmd > /dev/null 2>&1; then
-            die "cannot manipulate FAT filesystems"
-        fi
-        if ! command -v mcopy > /dev/null 2>&1; then
-            die "cannot manipulate FAT filesystems"
+        if ! command -v mmd > /dev/null 2>&1 || ! command -v mcopy > /dev/null 2>&1; then
+            die "cannot manipulate FAT filesystems - mmd and mcopy need to be installed (mtools)"
         fi
         ;;
 esac
