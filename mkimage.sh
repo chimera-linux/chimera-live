@@ -144,6 +144,9 @@ case "$ROOT_FSTYPE" in
     ext[34]) _rargs="-O ^has_journal";;
 esac
 
+BOOT_PARTN=1
+ROOT_PARTN=2
+
 # all device targets use a partition layout with a separate boot partition
 # and a root partition, the boot partition is vfat by default for best
 # compatibility (u-boot etc) and sized 256M (to fit multiple kernels)
@@ -170,6 +173,8 @@ name=uboot, start=2082,  size=8192,           type=2E54B353-1271-4842-806F-E436D
 name=boot,  start=16384, size=${BOOT_FSSIZE}, bootable, attrs="LegacyBIOSBootable"
 name=root
 EOF
+        BOOT_PARTN=3
+        ROOT_PARTN=4
     ;;
     *)
         sfdisk "$OUT_FILE" << EOF
@@ -199,18 +204,18 @@ fi
 # make into a real path
 LOOP_PART="/dev/mapper/${LOOP_DEV}p"
 
-mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_PART}1" \
+mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_PART}${BOOT_PARTN}" \
     || die "failed to create boot file system"
 
-mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_PART}2" \
+mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_PART}${ROOT_PARTN}" \
     || die "failed to create root file system"
 
-mount "${LOOP_PART}2" "${ROOT_DIR}" || die "failed to mount root file system"
+mount "${LOOP_PART}${ROOT_PARTN}" "${ROOT_DIR}" || die "failed to mount root file system"
 mkdir -p "${ROOT_DIR}/boot"
-mount "${LOOP_PART}1" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
+mount "${LOOP_PART}${BOOT_PARTN}" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
 
-BOOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}1")
-ROOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}2")
+BOOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}${BOOT_PARTN}")
+ROOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}${ROOT_PARTN}")
 
 msg "Unpacking rootfs tarball..."
 
