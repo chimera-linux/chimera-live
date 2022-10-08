@@ -155,8 +155,8 @@ case "$PLATFORM" in
 label: gpt
 unit: sectors
 first-lba: 32768
-name=boot, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
-name=root,                      type=L
+name=boot, size=${BOOT_FSSIZE}, bootable, attrs="LegacyBIOSBootable"
+name=root
 EOF
     ;;
     unmatched)
@@ -167,8 +167,8 @@ unit: sectors
 first-lba: 34
 name=spl,   start=34,    size=2048,           type=5B193300-FC78-40CD-8002-E86C45580B47
 name=uboot, start=2082,  size=8192,           type=2E54B353-1271-4842-806F-E436D6AF6985
-name=boot,  start=16384, size=${BOOT_FSSIZE}, type=L, bootable, attrs="LegacyBIOSBootable"
-name=root,                                    type=L
+name=boot,  start=16384, size=${BOOT_FSSIZE}, bootable, attrs="LegacyBIOSBootable"
+name=root
 EOF
     ;;
     *)
