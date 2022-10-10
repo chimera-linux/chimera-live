@@ -45,7 +45,7 @@ usage() {
     cat <<EOF
 Usage: $PROGNAME [opts] tarball
 
-Currently available platforms: rpi pbp unmatched
+Currently available platforms: rpi pbp reform-imx8mq unmatched
 
 The platform name is inferred from the input rootfs name.
 
@@ -101,7 +101,7 @@ if [ -z "$PLATFORM" ]; then
 fi
 
 case "$PLATFORM" in
-    rpi|pbp|unmatched) ;;
+    rpi|pbp|reform-imx8mq|unmatched) ;;
     *) die "unknown platform: $PLATFORM" ;;
 esac
 
@@ -152,8 +152,8 @@ ROOT_PARTN=2
 # compatibility (u-boot etc) and sized 256M (to fit multiple kernels)
 # while the root partition takes up the rest of the device
 case "$PLATFORM" in
-    pbp)
-        # while most devices use MBR, pinebook pro uses GPT
+    pbp|reform-imx8mq)
+        # GPT-using u-boot devices, start at 16M to leave enough space
         sfdisk "$OUT_FILE" << EOF
 label: gpt
 unit: sectors
@@ -248,6 +248,9 @@ case "$PLATFORM" in
         flash_file pinebook-pro-rk3399/idbloader.img 64
         flash_file pinebook-pro-rk3399/u-boot.itb 16384
         ;;
+    reform-imx8mq)
+        flash_file imx8mq_reform2/flash.bin 66
+        ;;
     unmatched)
         flash_file sifive_unmatched/u-boot-spl.bin 34
         flash_file sifive_unmatched/u-boot.itb 2082
@@ -265,6 +268,7 @@ echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
 case "$PLATFORM" in
     rpi) ln -s "../agetty-ttyAMA0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
     pbp) ln -s "../agetty-ttyS2" "${ROOT_DIR}/etc/dinit.d/boot.d";;
+    reform-imx8mq) ln -s "../agetty-ttymxc0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
     unmatched) ln -s "../agetty-ttySIF0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
 esac
 

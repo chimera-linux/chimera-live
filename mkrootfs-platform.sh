@@ -25,18 +25,18 @@ shift $((OPTIND - 1))
 BASE_PKG="base-full"
 PLAT_PKG=
 
-case "$PLATFORM" in
-    core)      BASE_PKG="base-core" ;;
-    minimal)   BASE_PKG="base-minimal" ;;
-    rpi)       PLAT_PKG="base-rpi" ;;
-    pbp)       PLAT_PKG="base-pbp" ;;
-    unmatched) PLAT_PKG="base-unmatched" ;;
-    *)
-        echo "unknown PLATFORM type: $PLATFORM"
-        echo
-        echo "supported platform types: core minimal rpi pbp unmatched"
-        exit 1
-        ;;
-esac
+PLATFORMS="core minimal rpi pbp reform-imx8mq unmatched"
 
-./mkrootfs.sh -b "$BASE_PKG" -p "$PLAT_PKG $EXTRA_PKGS" -f "$PLATFORM" "$@"
+for pkg in ${PLATFORMS}; do
+    if [ "$pkg" = "$PLATFORM" ]; then
+        exec ./mkrootfs.sh -b "$BASE_PKG" -p "base-$PLATFORM $EXTRA_PKGS" \
+            -f "$PLATFORM" "$@"
+    fi
+done
+
+echo "unknown PLATFORM type: $PLATFORM"
+echo
+echo "supported platform types: core minimal"
+echo "                          rpi pbp reform-imx8mq"
+echo "                          unmatched"
+exit 1
