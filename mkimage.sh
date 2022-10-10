@@ -96,7 +96,8 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ -z "$PLATFORM" ]; then
-    PLATFORM="${IN_FILE##*-}"
+    PLATFORM="${IN_FILE#*ROOTFS-}"
+    PLATFORM="${PLATFORM#*-}"
     PLATFORM="${PLATFORM%%.*}"
 fi
 
