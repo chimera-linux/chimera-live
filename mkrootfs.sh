@@ -133,6 +133,7 @@ msg "Installing target packages..."
 run_apk "${ROOT_DIR}" add ${PKG_BASE} ${PACKAGES} \
     || die "failed to install full rootfs"
 
+sync
 umount_pseudo
 
 msg "Generating root filesystem tarball..."

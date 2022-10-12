@@ -29,6 +29,11 @@ PLATFORMS="core minimal rpi pbp reform-imx8mq unmatched"
 
 for pkg in ${PLATFORMS}; do
     if [ "$pkg" = "$PLATFORM" ]; then
+        case "$PLATFORM" in
+            core) BASE_PKG="base-core" ;;
+            minimal) BASE_PKG="base-minimal" ;;
+            *) ;;
+        esac
         exec ./mkrootfs.sh -b "$BASE_PKG" -p "base-$PLATFORM $EXTRA_PKGS" \
             -f "$PLATFORM" "$@"
     fi
