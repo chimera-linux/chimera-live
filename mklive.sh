@@ -93,7 +93,7 @@ esac
 
 # default output file
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${APK_ARCH}-$(date '+%Y%m%d')${FLAVOR}.iso"
+    OUT_FILE="chimera-linux-${APK_ARCH}-LIVE-$(date '+%Y%m%d')${FLAVOR}.iso"
 fi
 
 if [ -z "$APK_REPO" ]; then
