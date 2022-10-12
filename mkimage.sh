@@ -121,7 +121,7 @@ esac
 : ${IMG_SIZE:=2G}
 
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${ARCH}-IMAGE-${PLATFORM}-$(date '+%Y%m%d').img"
+    OUT_FILE="chimera-linux-${ARCH}-IMAGE-$(date '+%Y%m%d')-${PLATFORM}.img"
 fi
 
 readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
