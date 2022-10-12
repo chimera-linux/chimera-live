@@ -50,6 +50,7 @@ Currently available platforms: rpi pbp reform-imx8mq unmatched
 The platform name is inferred from the input rootfs name.
 
 Options:
+ -a ARCH      Force the target architecture to ARCH
  -b FSTYPE    The /boot file system type (default: vfat)
  -B BOOTSIZE  The /boot file system size (default: 256MiB)
  -r FSTYPE    The / file system type (default: ext4)
@@ -62,8 +63,9 @@ EOF
 }
 
 PLATFORM=
+ARCH=
 
-while getopts "b:B:r:s:o:P:h" opt; do
+while getopts "a:b:B:r:s:o:P:h" opt; do
     case "$opt" in
         b) BOOT_FSTYPE="$OPTARG";;
         B) BOOT_FSSIZE="$OPTARG";;
@@ -71,6 +73,7 @@ while getopts "b:B:r:s:o:P:h" opt; do
         s) IMG_SIZE="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
         P) PLATFORM="$OPTARG";;
+        a) ARCH="$OPTARG";;
         h) usage 0 ;;
         *) usage ;;
     esac
@@ -101,6 +104,11 @@ if [ -z "$PLATFORM" ]; then
     PLATFORM="${PLATFORM%%.*}"
 fi
 
+if [ -z "$ARCH" ]; then
+    ARCH="${IN_FILE#chimera-linux-}"
+    ARCH="${ARCH%-ROOTFS*}"
+fi
+
 case "$PLATFORM" in
     rpi|pbp|reform-imx8mq|unmatched) ;;
     *) die "unknown platform: $PLATFORM" ;;
@@ -113,7 +121,7 @@ esac
 : ${IMG_SIZE:=2G}
 
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${PLATFORM}-$(date '+%Y%m%d').img"
+    OUT_FILE="chimera-linux-${ARCH}-IMAGE-${PLATFORM}-$(date '+%Y%m%d').img"
 fi
 
 readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
