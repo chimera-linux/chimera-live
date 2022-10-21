@@ -22,7 +22,7 @@ done
 
 shift $((OPTIND - 1))
 
-readonly BASE_PKGS="cryptsetup lvm2 zfs linux-modules-zfs ${EXTRA_PKGS}"
+readonly BASE_PKGS="cryptsetup lvm2 zfs linux-modules-zfs firmware-wifi firmware-linux-soc ${EXTRA_PKGS}"
 
 case "$IMAGE" in
     base)
