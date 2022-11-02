@@ -274,13 +274,6 @@ echo chimera > "${ROOT_DIR}/etc/hostname"
 echo 127.0.0.1 chimera >> "${ROOT_DIR}/etc/hosts"
 echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
 
-case "$PLATFORM" in
-    rpi) ln -s "../agetty-ttyAMA0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
-    pbp) ln -s "../agetty-ttyS2" "${ROOT_DIR}/etc/dinit.d/boot.d";;
-    reform-imx8mq) ln -s "../agetty-ttymxc0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
-    unmatched) ln -s "../agetty-ttySIF0" "${ROOT_DIR}/etc/dinit.d/boot.d";;
-esac
-
 umount -R "$ROOT_DIR" || die "failed to unmount image"
 kpartx -dv "$OUT_FILE" || die "failed to detach loop device"
 
