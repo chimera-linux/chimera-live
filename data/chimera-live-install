@@ -62,20 +62,19 @@ else
     rm -f "${1}/.write-test"
 fi
 
-# ensure it's empty
-for x in "${1}/"*; do
-    if [ -e "${x}" ]; then
-        dirn=$(basename "${x}")
-        if [ "${dirn}" = "lost+found" ]; then
-            # special case
-            unset dirn
-            continue
-        fi
-        echo "ERROR: The target directory is not empty."
-        usage
-    else
-        break
-    fi
+# ensure it's empty (there should be no output at all from the find)
+#
+# we might want to handle lost+found specially but then installs are
+# expected to be done onto a clean filesystem, and having non-empty
+# lost+found indicates that the filesystem is probably not clean
+#
+# directories are okay because it is expected that e.g. if somebody
+# has a separate /boot, they will want to pre-mount it before running
+# the chimera-live-install command
+#
+for x in $(find "${1}" '!' -type d); do
+    echo "ERROR: The target directory is not empty."
+    usage
 done
 
 echo "Copying system to ${1}..."
