@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Convenience script for generating different kinds of platform tarballs
-
+#
 # all extra arguments are passed to mkrootfs.sh as is
 #
 # Copyright 2022 Daniel "q66" Kolesa

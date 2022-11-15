@@ -16,7 +16,11 @@
 readonly PKG_BOOT="openresolv device-mapper xz"
 readonly PKG_ROOT="base-full linux"
 
-BUILD_DIR="build"
+if [ -n "$MKLIVE_BUILD_DIR" ]; then
+    BUILD_DIR="$MKLIVE_BUILD_DIR"
+else
+    BUILD_DIR="build"
+fi
 
 usage() {
     cat <<EOF
