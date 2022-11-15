@@ -10,6 +10,13 @@
 # License: BSD-2-Clause
 #
 
+APK_BIN="apk"
+
+if ! command -v "$APK_BIN" > /dev/null 2>&1; then
+    echo "ERROR: invalid apk command"
+    exit 1
+fi
+
 if [ -z "$APK_ARCH" ]; then
     APK_ARCH=$(${APK_BIN} --print-arch)
 fi
@@ -73,11 +80,11 @@ make_device() {
 
 case "$APK_ARCH" in
     aarch64)
-        make_device rpi
-        make_device pbp
-        make_device reform-imx8mq
+        make_device rpi "$@"
+        make_device pbp "$@"
+        make_device reform-imx8mq "$@"
         ;;
     riscv64)
-        make_device unmatched
+        make_device unmatched "$@"
         ;;
 esac
