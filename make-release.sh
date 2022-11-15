@@ -72,7 +72,7 @@ make_rootfs core "$@"
 make_device() {
     make_rootfs "$@"
     echo "DEVICE: $1"
-    if !check_stamp dev-$1; then
+    if ! check_stamp dev-$1; then
         ./mkimage.sh "chimera-linux-${APK_ARCH}-ROOTFS-$(date '+%Y%m%d')-$1.tar.gz" \
             || die "failed to build dev-$1"
         touch_stamp dev-$1
