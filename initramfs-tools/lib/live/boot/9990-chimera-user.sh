@@ -69,11 +69,8 @@ Chimera_User() {
     fi
 
     # enable default services
-    Chimera_Service udevd
+    Chimera_Service rtkit
     Chimera_Service dhcpcd
-    Chimera_Service dinit-userservd
-    Chimera_Service dbus
-    Chimera_Service elogind
     Chimera_Service polkitd
     Chimera_Service syslog-ng
 
@@ -84,7 +81,6 @@ Chimera_User() {
             console=*)
                 case "${_PARAMETER#console=}" in
                     *ttyS0*) Chimera_Service agetty-ttyS0;;
-                    *ttyAMA0*) Chimera_Service agetty-ttyAMA0;;
                     *ttyUSB0*) Chimera_Service agetty-ttyUSB0;;
                     *hvc0*) Chimera_Service agetty-hvc0;;
                     *hvsi0*) Chimera_Service agetty-hvsi0;;
@@ -103,9 +99,7 @@ Chimera_User() {
 
     # enable user services
     chroot /root mkdir -p "/home/${USERNAME}/.config/dinit.d/boot.d"
-    Chimera_Userserv dbus "$USERNAME"
     Chimera_Userserv pipewire-pulse "$USERNAME"
-    Chimera_Userserv pipewire "$USERNAME"
     Chimera_Userserv wireplumber "$USERNAME"
     # fix up permissions
     chroot /root chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
