@@ -24,11 +24,11 @@ fi
 mkdir -p release-stamps
 
 check_stamp() {
-    test -f "release-stamps/stamp-$1"
+    test -f "release-stamps/stamp-$APK_ARCH-$1"
 }
 
 touch_stamp() {
-    touch "release-stamps/stamp-$1"
+    touch "release-stamps/stamp-$APK_ARCH-$1"
 }
 
 die() {
