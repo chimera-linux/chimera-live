@@ -60,12 +60,12 @@ Chimera_User() {
     chroot /root sh -c "echo '$USERNAME:${USERPASS}'|chpasswd -c SHA512"
 
     if [ -x /root/usr/bin/doas ]; then
-        echo "permit persist anon" >> /root/etc/doas.conf
+        echo "permit persist $USERNAME" >> /root/etc/doas.conf
         chmod 600 /root/etc/doas.conf
     fi
 
     if [ -f /root/etc/sudoers ]; then
-        echo "anon ALL=(ALL) ALL" >> /root/etc/sudoers
+        echo "$USERNAME ALL=(ALL) ALL" >> /root/etc/sudoers
     fi
 
     # enable default services
