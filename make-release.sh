@@ -40,14 +40,14 @@ die() {
 
 echo "LIVE: base"
 if ! check_stamp live-base; then
-    MKLIVE_BUILD_DIR=build-live-base ./mklive-image.sh -b base -- \
+    MKLIVE_BUILD_DIR=build-live-base-$APK_ARCH ./mklive-image.sh -b base -- \
         -a "$APK_ARCH" "$@" || die "failed to build live-base"
     touch_stamp live-base
 fi
 
 echo "LIVE: gnome"
 if ! check_stamp live-gnome; then
-    MKLIVE_BUILD_DIR=build-live-gnome ./mklive-image.sh -b gnome -- \
+    MKLIVE_BUILD_DIR=build-live-gnome-$APK_ARCH ./mklive-image.sh -b gnome -- \
         -a "$APK_ARCH" "$@" || die "failed to build live-gnome"
     touch_stamp live-gnome
 fi
@@ -59,7 +59,7 @@ make_rootfs() {
     shift
     echo "ROOTFS: $ROOT_TYPE"
     if ! check_stamp root-$ROOT_TYPE; then
-        MKROOTFS_ROOT_DIR=build-root-$ROOT_TYPE ./mkrootfs-platform.sh \
+        MKROOTFS_ROOT_DIR=build-root-$ROOT_TYPE-$APK_ARCH ./mkrootfs-platform.sh \
             -P $ROOT_TYPE -- -a "$APK_ARCH" "$@" \
                 || die "failed to build root-$ROOT_TYPE"
         touch_stamp root-$ROOT_TYPE
