@@ -59,8 +59,9 @@ make_rootfs() {
     shift
     echo "ROOTFS: $ROOT_TYPE"
     if ! check_stamp root-$ROOT_TYPE; then
-        ./mkrootfs-platform.sh -P $ROOT_TYPE -- -a "$APK_ARCH" "$@" \
-            || die "failed to build root-$ROOT_TYPE"
+        MKROOTFS_ROOT_DIR=build-root-$ROOT_TYPE ./mkrootfs-platform.sh \
+            -P $ROOT_TYPE -- -a "$APK_ARCH" "$@" \
+                || die "failed to build root-$ROOT_TYPE"
         touch_stamp root-$ROOT_TYPE
     fi
 }

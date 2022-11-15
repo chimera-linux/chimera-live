@@ -10,7 +10,12 @@
 . ./lib.sh
 
 PKG_BASE="base-core"
-ROOT_DIR="build"
+
+if [ -n "$MKROOTFS_ROOT_DIR" ]; then
+    ROOT_DIR="$MKROOTFS_ROOT_DIR"
+else
+    ROOT_DIR="build"
+fi
 
 usage() {
     cat <<EOF
