@@ -24,6 +24,7 @@ shift $((OPTIND - 1))
 
 BASE_PKG="base-full"
 PLAT_PKG=
+KERNEL_PKG=
 
 PLATFORMS="core minimal rpi pbp reform-imx8mq unmatched"
 
@@ -32,9 +33,11 @@ for pkg in ${PLATFORMS}; do
         case "$PLATFORM" in
             core) BASE_PKG="base-core" ;;
             minimal) BASE_PKG="base-minimal" ;;
-            *) ;;
+            rpi) KERNEL_PKG="linux-rpi" ;;
+            *) KERNEL_PKG="linux" ;;
         esac
-        exec ./mkrootfs.sh -b "$BASE_PKG" -p "base-$PLATFORM $EXTRA_PKGS" \
+        exec ./mkrootfs.sh -b "$BASE_PKG" \
+            -p "base-$PLATFORM $KERNEL_PKG $EXTRA_PKGS" \
             -f "$PLATFORM" "$@"
     fi
 done
