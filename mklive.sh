@@ -14,7 +14,7 @@
 . ./lib.sh
 
 readonly PKG_BOOT="openresolv device-mapper xz"
-readonly PKG_ROOT="base-full linux"
+readonly PKG_ROOT="base-full linux-lts"
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
