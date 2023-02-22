@@ -22,32 +22,19 @@ In order to bootstrap the system into a directory (e.g. a partitioned and
 mounted root file system), you can use just plain `apk`. The tooling here
 is generally written around similar methods.
 
-The bootstrap process typically needs a few stages.
+First, bootstrap your root with a package that is safe to install without
+pseudo-filesystems mounted in the target. That means `base-bootstrap`
+(which is very tiny) or `base-minimal` (which is a bit bigger), typically
+this does not really matter.
 
-Install `base-files` first. This is needed because of limitations of the
-current `apk` version (`apk` will read the `passwd` and `group` files from
-the target root to set file permissions, so this needs to be available
-ahead of time).
-
-The `--initdb` argument is important. You also need to fix up its permissions
-manually.
+It is important to use `--initdb`, and it is also very important to have
+**at least apk-tools 3aa99faa83d08e45eff8a5cc95c4df16fb5bd257**, as older
+versions will mess up permissions on the initial files.
 
 ```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-files
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-minimal
 # chown -R root:root /my/root
 ```
-
-Then you can install `base-minimal`. This is small enough that it is safe to
-install without pseudo-filesystems mounted.
-
-```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main add base-minimal
-```
-
-The layout of `base-minimal` is set up so that it first depends on `base-bootstrap`,
-which installs a very basic set of core packages that do not require running
-any scripts. That means that by the time any scripts are executed, a reasonable
-system is already present to run them.
 
 Now is a good time to copy your public key in for `apk` so you do not have to pass it.
 
