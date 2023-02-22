@@ -121,13 +121,7 @@ cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy signing key"
 # install target packages
 msg "Installing target base packages..."
 
-run_apk "${ROOT_DIR}" --initdb add base-files \
-    || die "failed to install base-files"
-
-# fix up permissions
-chown -R root:root "${ROOT_DIR}"
-
-run_apk "${ROOT_DIR}" add base-minimal \
+run_apk "${ROOT_DIR}" --initdb add base-minimal \
     || die "failed to install base-minimal"
 
 # needs to be available before adding full package set

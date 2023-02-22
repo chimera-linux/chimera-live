@@ -26,13 +26,14 @@ BASE_PKG="base-full"
 PLAT_PKG=
 KERNEL_PKG=
 
-PLATFORMS="core minimal rpi pbp reform-imx8mq unmatched"
+PLATFORMS="bootstrap core minimal rpi pbp reform-imx8mq unmatched"
 
 for pkg in ${PLATFORMS}; do
     if [ "$pkg" = "$PLATFORM" ]; then
         case "$PLATFORM" in
-            core) BASE_PKG="base-core" ;;
+            bootstrap) BASE_PKG="base-bootstrap" ;;
             minimal) BASE_PKG="base-minimal" ;;
+            core) BASE_PKG="base-core" ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
             *) KERNEL_PKG="linux-lts" ;;
         esac
@@ -44,7 +45,7 @@ done
 
 echo "unknown PLATFORM type: $PLATFORM"
 echo
-echo "supported platform types: core minimal"
+echo "supported platform types: core minimal bootstrap"
 echo "                          rpi pbp reform-imx8mq"
 echo "                          unmatched"
 exit 1
