@@ -23,9 +23,8 @@ mounted root file system), you can use just plain `apk`. The tooling here
 is generally written around similar methods.
 
 First, bootstrap your root with a package that is safe to install without
-pseudo-filesystems mounted in the target. That means `base-bootstrap`
-(which is very tiny) or `base-minimal` (which is a bit bigger), typically
-this does not really matter.
+pseudo-filesystems mounted in the target. That means `chimerautils`,
+as every base metapackage installs stuff that needs scripts.
 
 It is important to use `--initdb`, and it is also very important to have
 **at least apk-tools 3aa99faa83d08e45eff8a5cc95c4df16fb5bd257**, as older
