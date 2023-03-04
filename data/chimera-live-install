@@ -87,6 +87,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Chimera successfully copied in ${1}."
-echo "Please perform all post-installation steps now (bootloader etc.)"
+echo "You can use chimera-live-chroot to get a shell in the system."
+echo "Please perform all post-installation steps now (bootloader etc.)."
 
 exit 0

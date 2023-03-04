@@ -48,11 +48,12 @@ Chimera_User() {
             "/lib/live/data/issue.in" > /root/etc/issue
     fi
 
-    # chimera-live-install
-    if [ -f "/lib/live/data/chimera-live-install" ]; then
-        cp /lib/live/data/chimera-live-install /root/usr/bin
-        chmod 755 /root/usr/bin/chimera-live-install
-    fi
+    # chimera-live-*
+    for x in /lib/live/data/chimera-live-*; do
+        [ -f "$x" ] || continue
+        cp $x /root/usr/bin
+        chmod 755 "/root/usr/bin/$(basename $x)"
+    done
 
     chroot /root useradd -m -c "$USERNAME" -s "$USERSHELL" "$USERNAME"
 

@@ -1,0 +1,132 @@
+#!/bin/sh
+#
+# Chimera Linux live network bootstrap tool
+#
+# Copyright 2023 Daniel "q66" Kolesa
+#
+# License: BSD-2-Clause
+#
+# This is an alternative to chimera-live-install. It will bootstrap a Chimera
+# installation from the network, being a simple thin wrapper around apk.
+#
+
+readonly PROGNAME=$(basename "$0")
+readonly SRC_ROOT="/run/live/rootfs/filesystem.squashfs"
+ROOT_DIR=
+
+usage() {
+    cat <<EOF
+Usage: $PROGNAME target_directory package1 ...
+
+This program bootstraps Chimera from the network, given packages on the
+command line. The target directory should exist and needs to be writable.
+EOF
+    exit ${1:=1}
+}
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+    usage 0
+fi
+
+MOUNTED_PSEUDO=
+
+do_trymount() {
+    if mountpoint -q "${ROOT_DIR}/$1" > /dev/null 2>&1; then
+        return 0
+    fi
+    mount --rbind "/$1" "${ROOT_DIR}/$1" || die "Failed to mount ${1}fs"
+    MOUNTED_PSEUDO="${MOUNTED_PSEUDO} $1"
+}
+
+mount_pseudo() {
+    do_trymount dev
+    do_trymount proc
+    do_trymount sys
+    do_trymount tmp
+}
+
+umount_pseudo() {
+    sync
+    for mnt in ${MOUNTED_PSEUDO}; do
+        [ -n "$mnt" ] || continue
+        umount -R -f "${ROOT_DIR}/$mnt" > /dev/null 2>&1
+    done
+}
+
+error_sig() {
+    umount_pseudo
+    [ -n "$REPOSF" ] && rm -f "$REPOSF"
+    exit ${1:=0}
+}
+
+trap 'error_sig $? $LINENO' INT TERM 0
+
+die() {
+    echo "ERROR: $@"
+    error_sig 1 $LINENO
+}
+
+# ensure we run as root
+if [ "$(id -u)" != "0" ]; then
+    die "Must run this as root."
+fi
+
+if [ $# -lt 1 ]; then
+    die "Not enough packages given."
+fi
+
+# ensure source exists
+if [ ! -d "${SRC_ROOT}" ]; then
+    die "Source root does not exist; pplease run this on live media."
+fi
+
+ROOT_DIR="$1"
+shift
+
+# ensure the target exists
+if [ ! -d "$ROOT_DIR" ]; then
+    die "The target directory does not exist."
+    usage
+fi
+
+# ensure the target is writable
+if ! touch "${ROOT_DIR}/.write-test"; then
+    echo "ERROR: The target directory is not writable."
+    usage
+else
+    rm -f "${ROOT_DIR}/.write-test"
+fi
+
+# concat all repos we have into a file
+REPOSF=$(mktemp)
+[ $? -eq 0 ] || die "Failed to generate a repositories file."
+
+printf "" > "$REPOSF"
+
+if [ -f /etc/apk/repositories ]; then
+    cat /etc/apk/repositories >> "$REPOSF"
+fi
+
+for f in /etc/apk/repositories.d/*; do
+    [ -f "$f" ] || continue
+    cat "$f" >> "$REPOSF"
+done
+
+# install chimerautils
+apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
+    --initdb add chimerautils || die "Failed to install chimerautils."
+
+# make it safe to install other things
+mount_pseudoq
+
+# install the other desired packages
+apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
+    --initdb add "$@" || die "Failed to install packages."
+
+umount_pseudo
+
+echo "Chimera successfully bootstrapped."
+echo "You can use chimera-live-chroot to get a shell in the system."
+echo "Please perform all post-installation steps now (bootloader etc.)."
+
+exit 0
