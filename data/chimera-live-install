@@ -86,13 +86,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Updating initramfs in ${1}..."
-
-if ! chroot "${1}" update-initramfs -k all -c; then
-    echo "ERROR: Failed to create target initramfs."
-    echo "You will need to perform initramfs creation manually."
-fi
-
 echo "Chimera successfully copied in ${1}."
 echo "Please perform all post-installation steps now (bootloader etc.)"
 
