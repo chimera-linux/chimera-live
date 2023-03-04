@@ -31,15 +31,7 @@ It is important to use `--initdb`, and it is also very important to have
 versions will mess up permissions on the initial files.
 
 ```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add base-minimal
-# chown -R root:root /my/root
-```
-
-Now is a good time to copy your public key in for `apk` so you do not have to pass it.
-
-```
-# mkdir -p /my/root/etc/apk/keys
-# cp /my/cports/etc/keys/*.pub /my/root/etc/apk/keys
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add chimerautils
 ```
 
 More advanced base metapackages may require pseudo-filesystems in their hooks.
@@ -50,6 +42,13 @@ If you want to install them, proceed like this:
 # mount -t sysfs none /my/root/sys
 # mount -t devtmpfs none /my/root/dev
 # mount --bind /tmp /my/root/tmp
+```
+
+Now is a good time to copy your public key in for `apk` so you do not have to pass it.
+
+```
+# mkdir -p /my/root/etc/apk/keys
+# cp /my/cports/etc/keys/*.pub /my/root/etc/apk/keys
 ```
 
 Then you can install e.g. `base-full` if you wish.
