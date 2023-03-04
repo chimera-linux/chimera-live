@@ -1334,7 +1334,7 @@ do_union ()
 			# + workdir and upperdir to be in separate directories
 			mkdir -p "${unionrw}/rw"
 			mkdir -p "${unionrw}/work"
-			unionmountopts="-o noatime,lowerdir=${unionro},upperdir=${unionrw}/rw,workdir=${unionrw}/work"
+			unionmountopts="-o noatime,lowerdir=${unionro},upperdir=${unionrw}/rw,workdir=${unionrw}/work,redirect_dir=on"
 			;;
 	esac
 
