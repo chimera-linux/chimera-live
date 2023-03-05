@@ -124,6 +124,7 @@ apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
     --initdb add "$@" || die "Failed to install packages."
 
 umount_pseudo
+rm -f "$REPOSF"
 
 echo "Chimera successfully bootstrapped."
 echo "You can use chimera-live-chroot to get a shell in the system."
