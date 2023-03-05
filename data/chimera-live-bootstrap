@@ -77,7 +77,7 @@ fi
 
 # ensure source exists
 if [ ! -d "${SRC_ROOT}" ]; then
-    die "Source root does not exist; pplease run this on live media."
+    die "Source root does not exist; please run this on live media."
 fi
 
 ROOT_DIR="$1"
