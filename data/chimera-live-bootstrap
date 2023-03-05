@@ -117,7 +117,7 @@ apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
     --initdb add chimerautils || die "Failed to install chimerautils."
 
 # make it safe to install other things
-mount_pseudoq
+mount_pseudo
 
 # install the other desired packages
 apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
