@@ -33,7 +33,7 @@ Chimera_Getty() {
         console) return 0 ;;
         *)
             # check if we have a matching agetty
-            if [ ! -f "/etc/dinit.d/agetty-$ttyn" ]; then
+            if [ ! -f "/root/etc/dinit.d/agetty-$ttyn" ]; then
                 return 0
             fi
             ;;
