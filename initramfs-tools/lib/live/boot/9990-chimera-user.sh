@@ -142,9 +142,15 @@ Chimera_User() {
 
     # enable default services
     Chimera_Service rtkit
-    Chimera_Service dhcpcd
     Chimera_Service polkitd
     Chimera_Service syslog-ng
+
+    # use networkmanager if installed, e.g. for gnome integration
+    if [ -f "/root/etc/dinit.d/networkmanager" ]; then
+        Chimera_Service networkmanager
+    else
+        Chimera_Service dhcpcd
+    fi
 
     # handle explicitly given serial consoles, prefer this as we
     # don't need to guess stuff like parity information from stty
