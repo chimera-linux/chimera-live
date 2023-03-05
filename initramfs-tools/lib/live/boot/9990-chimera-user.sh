@@ -14,6 +14,77 @@ Chimera_Userserv() {
     fi
 }
 
+Chimera_Getty() {
+    local ttyn speed dspeed cflags confname gargs
+    # sanitize the input string a bit
+    ttyn=$1
+    ttyn=${ttyn#/dev/}
+    speed=$ttyn
+    speed=${speed#*,}
+    if [ "$speed" = "$ttyn" ]; then
+        speed=
+    fi
+    ttyn=${ttyn%,*}
+    # ensure it exists
+    [ -c "/dev/$ttyn" ] || return 0
+    # filter some stuff out
+    case $ttyn in
+        tty[0-9]*) return 0 ;; # skip graphical ttys; managed differently
+        console) return 0 ;;
+        *)
+            # check if we have a matching agetty
+            if [ ! -f "/etc/dinit.d/agetty-$ttyn" ]; then
+                return 0
+            fi
+            ;;
+    esac
+    # ensure it's not active already
+    [ -L "/root/etc/dinit.d/boot.d/$ttyn" ] && return 0
+    # ensure it's a terminal
+    dspeed=$(stty -f "/dev/$ttyn" speed 2>/dev/null)
+    if [ $? -ne 0 ]; then
+        # not a terminal
+        return 0
+    fi
+    # generate an environment file
+    confname="/root/etc/default/agetty-$ttyn"
+    rm -f "$confname"
+    # always assume local line for additional non-graphical consoles
+    # also do not clear the terminal before login prompt when doing serial
+    gargs="-L --noclear"
+    if [ -n "$speed" ]; then
+        # speed was given
+        case "$speed" in
+            *n8*)
+                speed=${speed%n*}
+                gargs="$gargs -8"
+                ;;
+            *[oen]*)
+                speed=${speed%o*}
+                speed=${speed%e*}
+                speed=${speed%n*}
+                ;;
+            *)
+                # assume 8bit no parity
+                gargs="$gargs -8"
+                ;;
+        esac
+    else
+        # detect
+        speed=$dspeed
+        cflags=$(stty -f "/dev/$ttyn" | grep "^cflags: " 2>/dev/null)
+        if [ "$cflags" != "${cflags#*cs8 -parenb}" ]; then
+            # detected 8bit no parity
+            gargs="$gargs -8"
+        fi
+    fi
+    echo "GETTY_BAUD=${speed}" >> "$confname"
+    echo "GETTY_TERM=vt100" >> "$confname"
+    echo "GETTY_ARGS='$gargs'" >> "$confname"
+    # activate the service
+    Chimera_Service "agetty-$ttyn"
+}
+
 Chimera_User() {
     log_begin_msg "Setting up user"
 
@@ -75,28 +146,34 @@ Chimera_User() {
     Chimera_Service polkitd
     Chimera_Service syslog-ng
 
-    # enable extra gettys if needed; for serial and so on
-    # also enable extra services if requested
+    # handle explicitly given serial consoles, prefer this as we
+    # don't need to guess stuff like parity information from stty
+    #
+    # also activate other services the user has explicitly requested
     for _PARAMETER in ${LIVE_BOOT_CMDLINE}; do
         case "${_PARAMETER}" in
             console=*)
-                case "${_PARAMETER#console=}" in
-                    *ttyS0*) Chimera_Service agetty-ttyS0;;
-                    *ttyUSB0*) Chimera_Service agetty-ttyUSB0;;
-                    *hvc0*) Chimera_Service agetty-hvc0;;
-                    *hvsi0*) Chimera_Service agetty-hvsi0;;
-                esac
+                Chimera_Getty "${_PARAMETER#console=}"
                 ;;
             services=*)
                 SERVICES="${_PARAMETER#services=}"
+                OLDIFS=$IFS
                 IFS=,
                 for srv in ${SERVICES}; do
                     Chimera_Service "${srv}"
                 done
-                unset IFS
+                IFS=$OLDIFS
+                unset OLDIFS
                 ;;
         esac
     done
+
+    # try guessing active consoles, enable their respective gettys
+    if [ -f /sys/devices/virtual/tty/console/active ]; then
+        for _TTYN in $(cat /sys/devices/virtual/tty/console/active); do
+            Chimera_Getty "$_TTYN"
+        done
+    fi
 
     # enable user services
     chroot /root mkdir -p "/home/${USERNAME}/.config/dinit.d/boot.d"
