@@ -12,6 +12,24 @@ Chimera_Graphical() {
         esac
     done
 
+    if [ -x /root/usr/bin/dconf ]; then
+        # default dconf profile for custom tweaks
+        chroot /root mkdir -p /etc/dconf/profile /etc/dconf/db/local.d
+        cat << EOF > /root/etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+        # disable gnome autosuspend in live environment
+        cat << EOF > /root/etc/dconf/db/local.d/01-no-suspend
+[org/gnome/settings-daemon/plugins/power]
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='nothing'
+power-button-action='interactive'
+EOF
+        # refresh
+        chroot /root dconf update
+    fi
+
     # GUI disabled, do not enable any DM
     if [ -n "$FORCE_CONSOLE" ]; then
         log_end_msg
