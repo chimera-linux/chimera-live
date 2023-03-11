@@ -241,8 +241,17 @@ case "$ROOT_FSTYPE" in
     *) _fpassn="1";;
 esac
 
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${_fpassn}" >> "${ROOT_DIR}/etc/fstab"
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "${ROOT_DIR}/etc/fstab"
+# generate fstab
+FSTAB=$(mktemp)
+TMPL=$(tail -n1 "${ROOT_DIR}/etc/fstab")
+# delete tmpfs line
+sed '$d' "${ROOT_DIR}/etc/fstab" > "$FSTAB"
+echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${_fpassn}" >> "$FSTAB"
+echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "$FSTAB"
+echo "$TMPL" >> "$FSTAB"
+# overwrite old
+cat "$FSTAB" > "${ROOT_DIR}/etc/fstab"
+rm -f "$FSTAB"
 
 msg "Setting up bootloader..."
 
@@ -271,8 +280,6 @@ echo "Finalizing..."
 echo root:chimera | chpasswd -c SHA512 -R "${ROOT_DIR}"
 
 echo chimera > "${ROOT_DIR}/etc/hostname"
-echo 127.0.0.1 chimera >> "${ROOT_DIR}/etc/hosts"
-echo ::1 chimera >> "${ROOT_DIR}/etc/hosts"
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
 kpartx -dv "$OUT_FILE" || die "failed to detach loop device"
