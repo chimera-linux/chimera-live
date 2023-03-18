@@ -376,7 +376,7 @@ cleanup_dirs() {
     done
 }
 
-cleanup_dirs run tmp var/cache var/tmp
+cleanup_dirs run tmp var/cache var/log var/tmp
 
 chmod 777 "${ROOT_DIR}/tmp"
 chmod 777 "${ROOT_DIR}/var/tmp"
@@ -385,6 +385,11 @@ chmod 777 "${ROOT_DIR}/var/tmp"
 for f in "${ROOT_DIR}/boot/"initrd*; do
     [ -f "$f" ] && rm -f "$f"
 done
+
+# clean up backup shadow etc
+rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
+      "${ROOT_DIR}/etc/passwd-" "${ROOT_DIR}/etc/group-" \
+      "${ROOT_DIR}/etc/subuid-" "${ROOT_DIR}/etc/subgid-"
 
 # remove on-media grub leftovers
 rm -rf "${ROOT_DIR}/boot/grub"

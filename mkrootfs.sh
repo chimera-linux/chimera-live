@@ -132,6 +132,37 @@ msg "Installing target packages..."
 run_apk "${ROOT_DIR}" add ${PKG_BASE} ${PACKAGES} \
     || die "failed to install full rootfs"
 
+msg "Cleaning up..."
+
+cleanup_dirs() {
+    for x in "$@"; do
+        rm -rf "${ROOT_DIR}/${x}"
+        mkdir -p "${ROOT_DIR}/${x}"
+    done
+}
+
+cleanup_dirs run tmp var/cache var/log var/tmp
+
+chmod 777 "${ROOT_DIR}/tmp"
+chmod 777 "${ROOT_DIR}/var/tmp"
+
+msg "Setting up hostname and password..."
+
+if [ -x "${ROOT_DIR}/usr/bin/init" ]; then
+    # do not set it for tiny container images
+    echo chimera > "${ROOT_DIR}/etc/hostname"
+fi
+
+if [ -x "${ROOT_DIR}/usr/bin/chpasswd" ]; then
+    # we could use host chpasswd, but with chroot we know what we have
+    echo root:chimera | chroot /usr/bin/chpasswd -c SHA512
+fi
+
+# clean up backup shadow etc
+rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
+      "${ROOT_DIR}/etc/passwd-" "${ROOT_DIR}/etc/group-" \
+      "${ROOT_DIR}/etc/subuid-" "${ROOT_DIR}/etc/subgid-"
+
 umount_pseudo
 
 msg "Generating root filesystem tarball..."

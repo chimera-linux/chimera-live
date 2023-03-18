@@ -275,11 +275,7 @@ case "$PLATFORM" in
         ;;
 esac
 
-echo "Finalizing..."
-
-echo root:chimera | chpasswd -c SHA512 -R "${ROOT_DIR}"
-
-echo chimera > "${ROOT_DIR}/etc/hostname"
+msg "Cleaning up..."
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
 kpartx -dv "$OUT_FILE" || die "failed to detach loop device"
