@@ -14,7 +14,7 @@
 . ./lib.sh
 
 readonly PKG_BOOT="openresolv device-mapper xz"
-readonly PKG_ROOT="base-full linux-lts"
+readonly PKG_ROOT="base-full linux-lts xorriso mtools"
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
@@ -84,20 +84,11 @@ case "$APK_ARCH" in
     *) die "unsupported architecture: ${APK_ARCH}";;
 esac
 
-case "$PKG_GRUB" in
-    *-efi*)
-        if ! command -v mkfs.vfat > /dev/null 2>&1; then
-            die "cannot create FAT filesystems - mkfs.vfat needs to be installed (dosfstools)"
-        fi
-        if ! command -v mmd > /dev/null 2>&1 || ! command -v mcopy > /dev/null 2>&1; then
-            die "cannot manipulate FAT filesystems - mmd and mcopy need to be installed (mtools)"
-        fi
-        ;;
-esac
+ISO_VERSION=$(date '+%Y%m%d')
 
 # default output file
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${APK_ARCH}-LIVE-$(date '+%Y%m%d')${FLAVOR}.iso"
+    OUT_FILE="chimera-linux-${APK_ARCH}-LIVE-${ISO_VERSION}${FLAVOR}.iso"
 fi
 
 if [ -z "$APK_REPO" ]; then
@@ -236,131 +227,6 @@ for f in "${ROOT_DIR}/boot/"vmlinu[xz]-"${KERNVER}"; do
     cp -f "$f" "${LIVE_DIR}/${tf%%-*}"
 done
 
-# generate bootloader image
-msg "Generating bootloader image..."
-
-# check if to add graphical menu
-#
-# when adding stuff for more desktops/display managers,
-# adjust accordingly and also adjust the initramfs hooks
-if [ -f "${ROOT_DIR}/etc/dinit.d/gdm" ]; then
-    GRAPHICAL=1
-fi
-
-generate_grub_menu() {
-    sed \
-     -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
-     -e "s|@@KERNFILE@@|${KERNFILE}|g" \
-     -e "s|@@KERNVER@@|${KERNVER}|g" \
-     -e "s|@@ARCH@@|${APK_ARCH}|g" \
-     -e "s|@@BOOT_CMDLINE@@||g" \
-     grub/menu${1}.cfg.in
-}
-
-generate_grub_ppc() {
-    # grub.cfg you can see on the media
-
-    mkdir -p "${BOOT_DIR}/grub"
-
-    cp -f grub/early.cfg "${BOOT_DIR}/grub/grub.cfg"
-    echo >> "${BOOT_DIR}/grub/grub.cfg"
-    generate_grub_menu >> "${BOOT_DIR}/grub/grub.cfg"
-    if [ -n "$GRAPHICAL" ]; then
-        echo >> "${BOOT_DIR}/grub/grub.cfg"
-        generate_grub_menu _gui >> "${BOOT_DIR}/grub/grub.cfg"
-    fi
-
-    # grub.cfg that is builtin into the image
-
-    mkdir -p "${ROOT_DIR}/boot/grub"
-
-    cp -f grub/search.cfg "${ROOT_DIR}/boot/grub"
-    echo 'set prefix=($root)/boot/grub' >> "${ROOT_DIR}/boot/grub/search.cfg"
-
-    chroot "${ROOT_DIR}" grub-mkimage --verbose --config="boot/grub/search.cfg" \
-        --prefix="boot/grub" --directory="/usr/lib/grub/powerpc-ieee1275" \
-        --format="powerpc-ieee1275" --output="/tmp/grub.img" \
-        boot datetime disk ext2 help hfs hfsplus ieee1275_fb iso9660 ls \
-        macbless ofnet part_apple part_gpt part_msdos scsi search reboot \
-        linux || die "failed to generate grub image"
-
-    cp -f "${ROOT_DIR}/tmp/grub.img" "${BOOT_DIR}"
-
-    mkdir -p "${IMAGE_DIR}/ppc"
-    cp -f ppc/ofboot.b "${BOOT_DIR}"
-    cp -f ppc/ofboot.b "${BOOT_DIR}/bootinfo.txt"
-    cp -f ppc/ofboot.b "${IMAGE_DIR}/ppc/bootinfo.txt"
-}
-
-prepare_menu_standalone() {
-    mkdir -p "${ROOT_DIR}/boot/grub"
-
-    cp -f grub/search.cfg "${ROOT_DIR}/boot/grub/grub.cfg"
-    generate_grub_menu >> "${ROOT_DIR}/boot/grub/grub.cfg"
-    if [ -n "$GRAPHICAL" ]; then
-        echo >> "${ROOT_DIR}/boot/grub/grub.cfg"
-        generate_grub_menu _gui >> "${ROOT_DIR}/boot/grub/grub.cfg"
-    fi
-}
-
-generate_image_efi() {
-    chroot "${ROOT_DIR}" grub-mkstandalone --format=${1}-efi \
-        --output="/tmp/boot${2}.efi" --locales="" --fonts="" \
-        boot/grub/grub.cfg || die "failed to generate EFI ${1} image"
-}
-
-create_efi_fs() {
-    EFIBOOT="${BOOT_DIR}/efiboot.img"
-    truncate -s 32M "${EFIBOOT}" \
-        || die "failed to create EFI image"
-    mkfs.vfat "${EFIBOOT}" || die "failed to format EFI image"
-    # create dirs
-    LC_CTYPE=C mmd -i "${EFIBOOT}" efi efi/boot \
-        || die "failed to populate EFI image"
-    # populate
-    for img in "$@"; do
-        LC_CTYPE=C mcopy -i "${EFIBOOT}" "${ROOT_DIR}/tmp/boot${img}.efi" \
-            "::efi/boot/" || die "failed to populate EFI image"
-    done
-}
-
-generate_grub_x86() {
-    prepare_menu_standalone
-
-    # BIOS image
-    chroot "${ROOT_DIR}" grub-mkstandalone --format=i386-pc \
-        --output="/tmp/bios.img" \
-        --install-modules="linux normal iso9660 biosdisk memdisk search" \
-        --modules="linux normal iso9660 biosdisk search" \
-        --locales="" --fonts="" boot/grub/grub.cfg \
-        || die "failed to generate BIOS image"
-
-    generate_image_efi x86_64 x64
-    generate_image_efi i386 ia32
-
-    # final BIOS image
-    cat "${ROOT_DIR}/usr/lib/grub/i386-pc/cdboot.img" \
-        "${ROOT_DIR}/tmp/bios.img" > "${BOOT_DIR}/bios.img"
-
-    create_efi_fs x64 ia32
-
-    # save boot_hybrid.img before it's removed, used by xorriso
-    cp -f "${ROOT_DIR}/usr/lib/grub/i386-pc/boot_hybrid.img" "${BUILD_DIR}"
-}
-
-generate_grub_efi() {
-    prepare_menu_standalone
-    generate_image_efi $1 $2
-    create_efi_fs $2
-}
-
-case "${APK_ARCH}" in
-    ppc*) generate_grub_ppc;;
-    x86*) generate_grub_x86;;
-    aarch64*) generate_grub_efi arm64 aa64;;
-    riscv64*) generate_grub_efi riscv64 riscv64;;
-esac
-
 # clean up target root
 msg "Cleaning up target root..."
 
@@ -391,9 +257,6 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
       "${ROOT_DIR}/etc/passwd-" "${ROOT_DIR}/etc/group-" \
       "${ROOT_DIR}/etc/subuid-" "${ROOT_DIR}/etc/subgid-"
 
-# remove on-media grub leftovers
-rm -rf "${ROOT_DIR}/boot/grub"
-
 # generate squashfs
 msg "Generating squashfs filesystem..."
 
@@ -405,37 +268,43 @@ gensquashfs --pack-dir "${ROOT_DIR}" -c xz -k -x \
 # generate iso image
 msg "Generating ISO image..."
 
-generate_iso_base() {
-   xorriso -as mkisofs -iso-level 3 -rock -joliet \
-        -max-iso9660-filenames -omit-period -omit-version-number \
-        -relaxed-filenames -allow-lowercase -volid "CHIMERA_LIVE" "$@" \
-        -output "${OUT_FILE}" "${IMAGE_DIR}" \
-        || die "failed to generate ISO image"
+mount_pseudo
+
+# check if to add graphical menu
+#
+# when adding stuff for more desktops/display managers,
+# adjust accordingly and also adjust the initramfs hooks
+if [ -f "${ROOT_DIR}/etc/dinit.d/gdm" ]; then
+    GRAPHICAL=1
+fi
+
+generate_grub_menu() {
+    sed \
+     -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
+     -e "s|@@KERNFILE@@|${KERNFILE}|g" \
+     -e "s|@@KERNVER@@|${KERNVER}|g" \
+     -e "s|@@ARCH@@|${APK_ARCH}|g" \
+     -e "s|@@BOOT_CMDLINE@@||g" \
+     grub/menu${1}.cfg.in
 }
 
-generate_iso_ppc() {
-    generate_iso_base -hfsplus -isohybrid-apm-hfsplus \
-        -hfsplus-file-creator-type chrp tbxi boot/ofboot.b \
-        -hfs-bless-by p boot -sysid PPC -chrp-boot-part
-}
+mkdir -p "${BOOT_DIR}/grub"
 
-generate_iso_x86() {
-    generate_iso_base -eltorito-boot boot/bios.img -no-emul-boot \
-        -boot-load-size 4 -boot-info-table --eltorito-catalog boot/boot.cat \
-        --grub2-boot-info --grub2-mbr "${BUILD_DIR}/boot_hybrid.img" \
-        -eltorito-alt-boot -e boot/efiboot.img -no-emul-boot \
-        -append_partition 2 0xef "${BOOT_DIR}/efiboot.img"
-}
+generate_grub_menu > "${BOOT_DIR}/grub/grub.cfg"
+if [ -n "$GRAPHICAL" ]; then
+    echo >> "${BOOT_DIR}/grub/grub.cfg"
+    generate_grub_menu _gui >> "${BOOT_DIR}/grub/grub.cfg"
+fi
 
-generate_iso_efi() {
-    generate_iso_base --efi-boot boot/efiboot.img -no-emul-boot \
-        -append_partition 2 0xef "${BOOT_DIR}/efiboot.img"
-}
+mount --bind "${IMAGE_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
 
-case "${APK_ARCH}" in
-    ppc*) generate_iso_ppc;;
-    x86*) generate_iso_x86;;
-    *) generate_iso_efi;;
-esac
+chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o - \
+    --product-name "Chimera Linux" \
+    --product-version "${ISO_VERSION}" \
+    /mnt -- \
+    -volid "CHIMERA_LIVE" > "${OUT_FILE}" || die "failed to generate ISO image"
+
+umount -f "${ROOT_DIR}/mnt"
+umount_pseudo
 
 msg "Successfully generated image (${OUT_FILE})"

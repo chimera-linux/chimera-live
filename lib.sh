@@ -23,6 +23,7 @@ umount_pseudo() {
     umount -f "${ROOT_DIR}/dev" > /dev/null 2>&1
     umount -f "${ROOT_DIR}/proc" > /dev/null 2>&1
     umount -f "${ROOT_DIR}/sys" > /dev/null 2>&1
+    umount -f "${ROOT_DIR}/mnt" > /dev/null 2>&1
 }
 
 error_sig() {
