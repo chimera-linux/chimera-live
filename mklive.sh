@@ -301,7 +301,7 @@ mount --bind "${IMAGE_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
 chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o - \
     --product-name "Chimera Linux" \
     --product-version "${ISO_VERSION}" \
-    /mnt -- \
+    /mnt \
     -volid "CHIMERA_LIVE" > "${OUT_FILE}" || die "failed to generate ISO image"
 
 umount -f "${ROOT_DIR}/mnt"
