@@ -255,25 +255,9 @@ rm -f "$FSTAB"
 
 msg "Setting up bootloader..."
 
-flash_file() {
-    dd if="${ROOT_DIR}/usr/lib/u-boot/$1" of="/dev/${LOOP_DEV}" seek=$2 \
-        conv=notrunc,fsync > /dev/null 2>&1 \
-            || die "failed to flash $1"
-}
-
-case "$PLATFORM" in
-    pbp)
-        flash_file pinebook-pro-rk3399/idbloader.img 64
-        flash_file pinebook-pro-rk3399/u-boot.itb 16384
-        ;;
-    reform-imx8mq)
-        flash_file imx8mq_reform2/flash.bin 66
-        ;;
-    unmatched)
-        flash_file sifive_unmatched/u-boot-spl.bin 34
-        flash_file sifive_unmatched/u-boot.itb 2082
-        ;;
-esac
+if [ -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
+    "${ROOT_DIR}/usr/bin/install-u-boot" "/dev/${LOOP_DEV}" "${ROOT_DIR}"
+fi
 
 msg "Cleaning up..."
 
