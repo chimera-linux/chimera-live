@@ -121,7 +121,7 @@ mount_pseudo
 
 # install the other desired packages
 apk --root "$ROOT_DIR" --keys-dir /etc/apk/keys --repositories-file "$REPOSF" \
-    --initdb add "$@" || die "Failed to install packages."
+    add "$@" || die "Failed to install packages."
 
 umount_pseudo
 rm -f "$REPOSF"
