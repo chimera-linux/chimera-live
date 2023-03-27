@@ -1,0 +1,5 @@
+label: dos
+unit: sectors
+first-lba: 2048
+name=boot, start=2048, size=@BOOT_SIZE@, bootable, type=b
+name=root

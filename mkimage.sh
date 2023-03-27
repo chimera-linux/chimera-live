@@ -2,7 +2,11 @@
 #
 # Chimera Linux device image creation tool
 #
-# Copyright 2022 Daniel "q66" Kolesa
+# This is juts a wrapper around the more advanced device image tools which
+# primarily exists to create device images for release. All additional
+# arguments are passed to mkpart.sh.
+#
+# Copyright 2023 Daniel "q66" Kolesa
 #
 # License: BSD-2-Clause
 #
@@ -12,13 +16,14 @@ umask 022
 readonly PROGNAME=$(basename "$0")
 
 do_cleanup() {
-    [ -z "$ROOT_DIR" ] && return 0
-    umount -f "${ROOT_DIR}/boot" > /dev/null 2>&1
-    umount -f "${ROOT_DIR}" > /dev/null 2>&1
-    if [ -n "$LOOP_OUT" ]; then
-        kpartx -d "$OUT_FILE" > /dev/null 2>&1
+    if [ -n "$ROOT_DIR" -a -d "$ROOT_DIR" ]; then
+        umount -fR "$ROOT_DIR" > /dev/null 2>&1
+        sync
+        rmdir "$ROOT_DIR"
     fi
-    [ -d "$ROOT_DIR" ] && rmdir "$ROOT_DIR"
+    if [ -n "$LOOP_DEV" ]; then
+        losetup -d "$LOOP_DEV"
+    fi
 }
 
 error_sig() {
@@ -43,37 +48,36 @@ fi
 
 usage() {
     cat <<EOF
-Usage: $PROGNAME [opts] tarball
-
-Currently available platforms: rpi pbp reform-imx8mq unmatched
+Usage: $PROGNAME [opts] tarball -- [mkpart_args]
 
 The platform name is inferred from the input rootfs name.
 
 Options:
- -a ARCH      Force the target architecture to ARCH
- -b FSTYPE    The /boot file system type (default: vfat)
- -B BOOTSIZE  The /boot file system size (default: 256MiB)
- -r FSTYPE    The / file system type (default: ext4)
- -s SIZE      The image size (default: 2G)
- -o FILE      Output a FILE (default: chimera-linux-PLATFORM-YYYYMMDD.img)
- -P PLATFORM  Force the platform type to PLATFORM
- -h           Print this message.
+ -o FILE  Output file name (default: chimera-linux-<arch>-IMAGE-<date>-<platform>.img)
+ -s SIZE  The image size (default: 2G)
+ -h       Print this message.
 EOF
     exit ${1:=1}
 }
 
+if ! command -v losetup > /dev/null 2>&1; then
+    die "losetup is required"
+fi
+
+if ! command -v truncate > /dev/null 2>&1; then
+    die "truncate is required"
+fi
+
+IMAGE_SIZE=2G
+OUT_FILE=
 PLATFORM=
+LOOP_DEV=
 ARCH=
 
-while getopts "a:b:B:r:s:o:P:h" opt; do
+while getopts "o:s:h" opt; do
     case "$opt" in
-        b) BOOT_FSTYPE="$OPTARG";;
-        B) BOOT_FSSIZE="$OPTARG";;
-        r) ROOT_FSTYPE="$OPTARG";;
-        s) IMG_SIZE="$OPTARG";;
-        o) OUT_FILE="$OPTARG";;
-        P) PLATFORM="$OPTARG";;
-        a) ARCH="$OPTARG";;
+        o) OUT_FILE="$OPTARG" ;;
+        s) IMAGE_SIZE="$OPTARG";;
         h) usage 0 ;;
         *) usage ;;
     esac
@@ -98,177 +102,57 @@ if [ $? -ne 0 ]; then
     die "failed to create root directory"
 fi
 
-if [ -z "$PLATFORM" ]; then
-    PLATFORM="${IN_FILE#*ROOTFS-}"
-    PLATFORM="${PLATFORM#*-}"
-    PLATFORM="${PLATFORM%%.*}"
+PLATFORM="${IN_FILE#*ROOTFS-}"
+PLATFORM="${PLATFORM#*-}"
+PLATFORM="${PLATFORM%%.*}"
+
+ARCH="${IN_FILE#chimera-linux-}"
+ARCH="${ARCH%-ROOTFS*}"
+
+[ -z "$PLATFORM" -o -z "$ARCH" ] || die "invalid input filename"
+
+if [ ! -r "sfdisk/$PLATFORM" ]; then
+    die "unknown platform: $PLATFORM"
 fi
-
-if [ -z "$ARCH" ]; then
-    ARCH="${IN_FILE#chimera-linux-}"
-    ARCH="${ARCH%-ROOTFS*}"
-fi
-
-case "$PLATFORM" in
-    rpi|pbp|reform-imx8mq|unmatched) ;;
-    *) die "unknown platform: $PLATFORM" ;;
-esac
-
-# defaults
-: ${BOOT_FSTYPE:=vfat}
-: ${BOOT_FSSIZE:=256MiB}
-: ${ROOT_FSTYPE:=ext4}
-: ${IMG_SIZE:=2G}
 
 if [ -z "$OUT_FILE" ]; then
     OUT_FILE="chimera-linux-${ARCH}-IMAGE-$(date '+%Y%m%d')-${PLATFORM}.img"
 fi
 
-readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd findmnt mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
+mkdir -p "${ROOT_DIR}" || die "failed to create directories"
 
-for tool in ${CHECK_TOOLS}; do
-    if ! command -v $tool > /dev/null 2>&1; then
-        die "missing tool: $tool"
-    fi
-done
+msg "Creating image..."
 
-msg "Creating disk image..."
+truncate -s "$IMAGE_SIZE" "$OUT_FILE" > /dev/null 2>&1 || \
+    die "failed to create image"
 
-truncate -s "${IMG_SIZE}" "${OUT_FILE}" > /dev/null 2>&1 \
-    || die "failed to create image"
-
-mkdir -p "${ROOT_DIR}" \
-    || die "failed to create directories"
-
-msg "Creating partitions..."
-
-_bargs=
-if [ "$BOOT_FSTYPE" = "vfat" ]; then
-    _bargs="-I -F16"
-fi
-
-_rargs=
-case "$ROOT_FSTYPE" in
-    # disable journal on ext3/4 to improve lifespan of flash memory
-    ext[34]) _rargs="-O ^has_journal";;
-esac
-
-BOOT_PARTN=1
-ROOT_PARTN=2
-
-# all device targets use a partition layout with a separate boot partition
-# and a root partition, the boot partition is vfat by default for best
-# compatibility (u-boot etc) and sized 256M (to fit multiple kernels)
-# while the root partition takes up the rest of the device
-case "$PLATFORM" in
-    pbp|reform-imx8mq)
-        # GPT-using u-boot devices, start at 16M to leave enough space
-        sfdisk "$OUT_FILE" << EOF
-label: gpt
-unit: sectors
-first-lba: 32768
-name=boot, size=${BOOT_FSSIZE}, bootable, attrs="LegacyBIOSBootable"
-name=root
-EOF
-    ;;
-    unmatched)
-        # hifive unmatched needs gpt and spl/uboot need special partitions
-        sfdisk "$OUT_FILE" << EOF
-label: gpt
-unit: sectors
-first-lba: 34
-name=spl,   start=34,    size=2048,           type=5B193300-FC78-40CD-8002-E86C45580B47
-name=uboot, start=2082,  size=8192,           type=2E54B353-1271-4842-806F-E436D6AF6985
-name=boot,  start=16384, size=${BOOT_FSSIZE}, bootable, attrs="LegacyBIOSBootable"
-name=root
-EOF
-        BOOT_PARTN=3
-        ROOT_PARTN=4
-    ;;
-    *)
-        sfdisk "$OUT_FILE" << EOF
-label: dos
-2048,${BOOT_FSSIZE},b,*
-,+,L
-EOF
-    ;;
-esac
+LOOP_DEV=$(losetup --show -fP "$OUT_FILE")
 
 if [ $? -ne 0 ]; then
-    die "failed to format the image"
+    LOOP_DEV=
+    die "failed to attach loop device"
 fi
 
-LOOP_OUT=$(kpartx -av "$OUT_FILE")
+msg "Creating and mounting partitions..."
 
-if [ $? -ne 0 ]; then
-    die "failed to set up loop device"
-fi
-
-LOOP_DEV=$(echo $LOOP_OUT | grep -o "loop[0-9]*" | uniq)
-
-if [ -z "$LOOP_DEV" ]; then
-    die "failed to identify loop device"
-fi
-
-# make into a real path
-LOOP_PART="/dev/mapper/${LOOP_DEV}p"
-
-mkfs.${BOOT_FSTYPE} ${_bargs} "${LOOP_PART}${BOOT_PARTN}" \
-    || die "failed to create boot file system"
-
-mkfs.${ROOT_FSTYPE} ${_rargs} "${LOOP_PART}${ROOT_PARTN}" \
-    || die "failed to create root file system"
-
-mount "${LOOP_PART}${ROOT_PARTN}" "${ROOT_DIR}" || die "failed to mount root file system"
-mkdir -p "${ROOT_DIR}/boot"
-mount "${LOOP_PART}${BOOT_PARTN}" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
-
-BOOT_UUID=$(findmnt -no uuid "${ROOT_DIR}/boot")
-ROOT_UUID=$(findmnt -no uuid "${ROOT_DIR}")
+./mkpart.sh -j "$@" "$LOOP_DEV" "$PLATFORM" "$ROOT_DIR" || \
+    die "could not set up target image"
 
 msg "Unpacking rootfs tarball..."
 
-_tarargs=
-if [ -n "$(tar --version | grep GNU)" ]; then
-    _tarargs="--xattrs-include='*'"
-fi
-
-tar -pxf "$IN_FILE" --xattrs $_tarargs -C "$ROOT_DIR"
-
-# use fsck for all file systems other than f2fs
-case "$ROOT_FSTYPE" in
-    f2fs) _fpassn="0";;
-    *) _fpassn="1";;
-esac
-
-# generate fstab
-FSTAB=$(mktemp)
-TMPL=$(tail -n1 "${ROOT_DIR}/etc/fstab")
-# delete tmpfs line
-sed '$d' "${ROOT_DIR}/etc/fstab" > "$FSTAB"
-echo "UUID=$ROOT_UUID / $ROOT_FSTYPE defaults 0 ${_fpassn}" >> "$FSTAB"
-echo "UUID=$BOOT_UUID /boot $BOOT_FSTYPE defaults 0 2" >> "$FSTAB"
-echo "$TMPL" >> "$FSTAB"
-# overwrite old
-cat "$FSTAB" > "${ROOT_DIR}/etc/fstab"
-rm -f "$FSTAB"
-
-msg "Setting up bootloader..."
-
-if [ -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
-    "${ROOT_DIR}/usr/bin/install-u-boot" "/dev/${LOOP_DEV}" "${ROOT_DIR}"
-fi
+./unrootfs.sh "$IN_FILE" "$ROOT_DIR" "$LOOP_DEV" || \
+    die "could not install Chimera"
 
 msg "Cleaning up..."
 
 umount -R "$ROOT_DIR" || die "failed to unmount image"
-kpartx -dv "$OUT_FILE" || die "failed to detach loop device"
-
 rmdir "$ROOT_DIR" || die "root directory not emoty"
+ROOT_DIR=
 
-chmod 644 "$OUT_FILE"
+losetup -d "$LOOP_DEV" || die "failed to detach loop device"
+LOOP_DEV=
 
 msg "Compressing image..."
 gzip -9 "$OUT_FILE"
 
-msg "Successfully created image (${OUT_FILE}.gz)"
+msg "Successfully generated image (${OUT_FILE}.gz)."

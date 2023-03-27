@@ -6,6 +6,8 @@ This consists of the following scripts right now:
 
 * `mklive.sh` - the live ISO image creator for BIOS, EFI and POWER/PowerPC systems
 * `mkrootfs.sh` - root filesystem tarball creator
+* `mkpart.sh` - device partitioning tool
+* `unrootfs.sh` - rootfs tarball extractor
 * `mkimage.sh` - device image creator
 
 And the following auxiliary scripts:
@@ -128,22 +130,81 @@ The `base-core` metapackage is the default, but you can override it, e.g.
 # ./mkrootfs.sh -b base-minimal
 ```
 
+## Setting up specific devices
+
+The `mkpart.sh` and `unrootfs.sh` scripts allow you to prepare e.g. SD cards
+of various devices from their rootfs tarballs.
+
+For example, if you have an SD card at `/dev/mmcblk0` and want to install
+Chimera for Pinebook Pro on it, you would do something like this:
+
+```
+# mkdir -p rootmnt
+# ./mkpart.sh -j /dev/mmcblk0 pbp rootmnt
+```
+
+This will partition the SD card for the device. Generally for a device to
+be supported here, it needs to have a disk layout file, in the `sfdisk`
+directory. You can tweak various parameters via options (see `-h`). You
+can of course also partition and mount the card manually.
+
+Once that is done, you can perform the installation from the tarball:
+
+```
+# ./unrootfs.sh chimera-linux-aarch64-ROOTFS-...-pbp.tar.gz rootmnt /dev/mmcblk0
+```
+
+This will both install the system onto the card and install U-Boot onto the
+card (as it's given as the last argument). If you omit the last argument,
+no bootloader installation will be done.
+
+After that, you can just unmount the directory and eject the card:
+
+```
+# umount -R rootmnt
+# sync
+```
+
+If you want to create an image instead of setting up a physical storage device,
+you can do so thanks to loop devices. First, create storage for the image,
+in this example 8G:
+
+```
+# truncate -s 8G chimera.img
+```
+
+Then attach it with `losetup` and let it show which loop device is used:
+
+```
+# losetup --show -fP chimera.img
+```
+
+That will print for example `/dev/loop0`. Now all you have to do is pass that
+path in place of the device path, e.g. `/dev/loop0` instead of `/dev/mmcblk0`.
+
+Once you are done and have unmounted everything, detach it:
+
+```
+# losetup -d /dev/loop0
+```
+
+And that's about it.
+
 ## Creating device images with mkimage.sh
 
-The `mkimage.sh` script creates device images from platform tarballs. The simplest
-usage looks like this:
+The `mkimage.sh` script simplifies creation of device images so that you do
+not have to manipulate loop devices manually. However, it comes at the cost
+of being far less flexible.
+
+It accepts a prepared device rootfs tarball as its file name. Optional
+arguments can be used to set the output file name and the image size (by
+default 2G). It will also automatically compress the image with `gzip`.
 
 ```
-# ./mkimage.sh chimera-linux-aarch64-ROOTFS-20220906-rpi.tar.gz
+# ./mkimage.sh chimera-linux-aarch64-ROOTFS-20220906-rpi.tar.gz -- -j
 ```
 
-It by default autodetects the device type from the filename. Then it creates a device
-image that you can directly write onto removable media (e.g. an SD card for Raspberry
-Pi). The image normally contains 2 partitions (by default, a 256MiB `/boot` `vfat`
-and the rest an `ext4` partition for `/`, the total being 2GiB). The file system
-types and sizes can be overridden, as can the device type.
-
-After partition setup, it unpacks the rootfs tarball and performs additional setup
-that is device-specific, typically bootloader setup. It also sets a default hostname,
-root password (`chimera`) and enables services necessary for initial function (e.g.
-`agetty` for serial console). The output is a `gzip`-compressed image.
+The platform name, architecture and everything else is detected from the
+input filename. Additional arguments passed after `--` will be passed as
+optional arguments to `mkpart.sh`. In the example above, `-j` is passed
+to disable journal for root filesystem.
