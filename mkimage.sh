@@ -124,7 +124,7 @@ if [ -z "$OUT_FILE" ]; then
     OUT_FILE="chimera-linux-${ARCH}-IMAGE-$(date '+%Y%m%d')-${PLATFORM}.img"
 fi
 
-readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
+readonly CHECK_TOOLS="truncate sfdisk kpartx tar chpasswd findmnt mkfs.${BOOT_FSTYPE} mkfs.${ROOT_FSTYPE}"
 
 for tool in ${CHECK_TOOLS}; do
     if ! command -v $tool > /dev/null 2>&1; then
@@ -223,8 +223,8 @@ mount "${LOOP_PART}${ROOT_PARTN}" "${ROOT_DIR}" || die "failed to mount root fil
 mkdir -p "${ROOT_DIR}/boot"
 mount "${LOOP_PART}${BOOT_PARTN}" "${ROOT_DIR}/boot" || die "failed to mount boot directory"
 
-BOOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}${BOOT_PARTN}")
-ROOT_UUID=$(blkid -o value -s UUID "${LOOP_PART}${ROOT_PARTN}")
+BOOT_UUID=$(findmnt -no uuid "${ROOT_DIR}/boot")
+ROOT_UUID=$(findmnt -no uuid "${ROOT_DIR}")
 
 msg "Unpacking rootfs tarball..."
 
