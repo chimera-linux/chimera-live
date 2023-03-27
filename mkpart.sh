@@ -101,10 +101,10 @@ shift $((OPTIND - 1))
 BDEV=$1
 shift
 
-PLATFORM=$2
+PLATFORM=$1
 shift
 
-MNTPT=$(readlink -f "$3")
+MNTPT=$(readlink -f "$1")
 shift
 
 [ -b "$BDEV" ] || die "input must be a block device"
