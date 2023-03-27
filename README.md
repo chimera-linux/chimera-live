@@ -130,6 +130,12 @@ The `base-core` metapackage is the default, but you can override it, e.g.
 # ./mkrootfs.sh -b base-minimal
 ```
 
+The `mkrootfs.sh` is also capable of creating delta tarballs. The invocation
+only differs in that you pass a base tarball (previously created with the same
+tool) via `-B some-base.tar.gz`. The new tarball will then only contain newly
+added or changed files, creating a tarball that can be extracted over the
+base tarball to get the whole thing.
+
 ## Setting up specific devices
 
 The `mkpart.sh` and `unrootfs.sh` scripts allow you to prepare e.g. SD cards

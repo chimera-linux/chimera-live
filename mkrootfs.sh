@@ -17,6 +17,8 @@ else
     ROOT_DIR="build"
 fi
 
+TAR_TYPE="ROOTFS"
+
 usage() {
     cat <<EOF
 Usage: $PROGNAME [opts] [ROOT_DIR]
@@ -25,7 +27,8 @@ Options:
  -A APK       Override the apk tool (default: apk)
  -a ARCH      Generate an image for ARCH (must be runnable on current machine)
  -b PACKAGE   The base package (default: base-core)
- -o FILE      Output a FILE (default: chimera-linux-ARCH-ROOTFS-YYYYMMDD(-FLAVOR).tar.gz)
+ -B TARBALL   Generate a delta tarball against TARBALL
+ -o FILE      Output a FILE (default: chimera-linux-ARCH-${TAR_TYPE}-YYYYMMDD(-FLAVOR).tar.gz)
  -f FLAVOR    Flavor name to include in default output file name
  -r REPO      Path to apk repository.
  -k KEY       Path to apk repository public key.
@@ -36,6 +39,7 @@ EOF
 }
 
 APK_BIN="apk"
+BASE_TAR=
 
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
@@ -51,9 +55,10 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@"
 }
 
-while getopts "a:b:f:k:o:p:r:h" opt; do
+while getopts "a:b:B:f:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
+        B) BASE_TAR="$OPTARG"; TAR_TYPE="DROOTFS";;
         a) APK_ARCH="$OPTARG";;
         b) PKG_BASE="$OPTARG";;
         f) FLAVOR="-$OPTARG";;
@@ -71,7 +76,12 @@ shift $((OPTIND - 1))
 
 # default output file
 if [ -z "$OUT_FILE" ]; then
-    OUT_FILE="chimera-linux-${APK_ARCH}-ROOTFS-$(date '+%Y%m%d')${FLAVOR}.tar.gz"
+    OUT_FILE="chimera-linux-${APK_ARCH}-${TAR_TYPE}-$(date '+%Y%m%d')${FLAVOR}.tar.gz"
+fi
+
+# overlay
+if [ -n "$BASE_TAR" -a ! -r "$BASE_TAR" ]; then
+    die "invalid base tarball $BASE_TAR"
 fi
 
 if [ -z "$APK_REPO" ]; then
@@ -112,17 +122,43 @@ mkdir -p "${ROOT_DIR}" || die "failed to create directory"
 # make absolute so that we aren't prone to bad cleanup with changed cwd
 ROOT_DIR=$(realpath "$ROOT_DIR")
 
-# copy key
-msg "Copying signing key..."
+if [ -n "$BASE_TAR" ]; then
+    ROOT_LOWER="${ROOT_DIR}/lower"
+    ROOT_UPPER="${ROOT_DIR}/upper"
+    ROOT_WORK="${ROOT_DIR}/work"
+    ROOT_DIR="${ROOT_DIR}/merged"
 
-mkdir -p "${ROOT_DIR}/etc/apk/keys" || die "failed to create keys directory"
-cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy signing key"
+    mkdir -p "${ROOT_LOWER}" || die "failed to create lower"
+    mkdir -p "${ROOT_UPPER}" || die "failed to create upper"
+    mkdir -p "${ROOT_WORK}" || die "failed to create work"
+    mkdir -p "${ROOT_DIR}" || die "failed to create merged"
 
-# install target packages
-msg "Installing target base packages..."
+    # unpack the base tarball into lower
+    tar -pxf "$BASE_TAR" -C "${ROOT_LOWER}" || die "failed to unpack base tar"
 
-run_apk "${ROOT_DIR}" --initdb add chimerautils \
-    || die "failed to install chimerautils"
+    # mount the overlay
+    mount -t overlay overlay -o \
+        "lowerdir=${ROOT_LOWER},upperdir=${ROOT_UPPER},workdir=${ROOT_WORK}" \
+        "${ROOT_DIR}" || die "failed to mount overlay"
+
+    TAR_DIR="${ROOT_UPPER}"
+else
+    # copy key
+    msg "Copying signing key..."
+
+    mkdir -p "${ROOT_DIR}/etc/apk/keys" || \
+        die "failed to create keys directory"
+    cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || \
+        die "failed to copy signing key"
+
+    # install target packages
+    msg "Installing target base packages..."
+
+    run_apk "${ROOT_DIR}" --initdb add chimerautils \
+        || die "failed to install chimerautils"
+
+    TAR_DIR="${ROOT_DIR}"
+fi
 
 # needs to be available before adding full package set
 msg "Mounting pseudo-filesystems..."
@@ -155,7 +191,7 @@ fi
 
 if [ -x "${ROOT_DIR}/usr/bin/chpasswd" ]; then
     # we could use host chpasswd, but with chroot we know what we have
-    echo root:chimera | chroot /usr/bin/chpasswd -c SHA512
+    echo root:chimera | chroot "${ROOT_DIR}" /usr/bin/chpasswd -c SHA512
 fi
 
 # clean up backup shadow etc
@@ -166,6 +202,6 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
 umount_pseudo
 
 msg "Generating root filesystem tarball..."
-tar -C "${ROOT_DIR}" -cvpzf "${OUT_FILE}" . || die "tar failed"
+tar -C "${TAR_DIR}" -cvpzf "${OUT_FILE}" . || die "tar failed"
 
 msg "Successfully generated tarball (${OUT_FILE})"
