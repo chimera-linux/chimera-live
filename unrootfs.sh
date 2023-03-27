@@ -43,10 +43,10 @@ EOF
 IN_FILE="$1"
 shift
 
-ROOT_DIR="$2"
+ROOT_DIR="$1"
 shift
 
-BL_DEV="$3"
+BL_DEV="$1"
 shift
 
 if [ ! -r "$IN_FILE" ]; then
