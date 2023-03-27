@@ -48,9 +48,11 @@ fi
 
 usage() {
     cat <<EOF
-Usage: $PROGNAME [opts] tarball -- [mkpart_args]
+Usage: $PROGNAME [opts] tarballs -- [mkpart_args]
 
-The platform name is inferred from the input rootfs name.
+The platform name is inferred from the last input tarball name.
+If multiple tarballs are specified, they are to be separated with
+semicolons.
 
 Options:
  -o FILE  Output file name (default: chimera-linux-<arch>-IMAGE-<date>-<platform>.img)
@@ -85,16 +87,23 @@ done
 
 shift $((OPTIND - 1))
 
-IN_FILE="$1"
+IN_FILES="$1"
 shift
 
-if [ -z "$IN_FILE" ]; then
-    die "input file not given"
+if [ -z "$IN_FILES" ]; then
+    die "input file(s) not given"
 fi
 
-if [ ! -r "$IN_FILE" ]; then
-    die "cannot read input file: $IN_FILE"
-fi
+OLD_IFS=$IFS
+IFS=;
+LAST_FILE=
+for tfile in $IN_FILES; do
+    if [ ! -r "$tfile" ]; then
+        die "could not read input file: $tfile"
+    fi
+    LAST_FILE=$tfile
+done
+IFS=$OLD_IFS
 
 ROOT_DIR=$(mktemp -d)
 
@@ -102,12 +111,14 @@ if [ $? -ne 0 ]; then
     die "failed to create root directory"
 fi
 
-PLATFORM="${IN_FILE#*ROOTFS-}"
+PLATFORM="${LAST_FILE#*ROOTFS-}"
+PLATFORM="${PLATFORM#*DROOTFS-}"
 PLATFORM="${PLATFORM#*-}"
 PLATFORM="${PLATFORM%%.*}"
 
-ARCH="${IN_FILE#chimera-linux-}"
+ARCH="${LAST_FILE#chimera-linux-}"
 ARCH="${ARCH%-ROOTFS*}"
+ARCH="${ARCH%-DROOTFS*}"
 
 [ -n "$PLATFORM" -a -n "$ARCH" ] || die "invalid input filename"
 
@@ -138,7 +149,7 @@ msg "Creating and mounting partitions..."
 ./mkpart.sh -j "$@" "$LOOP_DEV" "$PLATFORM" "$ROOT_DIR" || \
     die "could not set up target image"
 
-./unrootfs.sh "$IN_FILE" "$ROOT_DIR" "$LOOP_DEV" || \
+./unrootfs.sh "$IN_FILES" "$ROOT_DIR" "$LOOP_DEV" || \
     die "could not install Chimera"
 
 msg "Cleaning up..."

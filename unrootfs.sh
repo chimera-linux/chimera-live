@@ -40,7 +40,7 @@ EOF
     exit ${1:=1}
 }
 
-IN_FILE="$1"
+IN_FILES="$1"
 shift
 
 ROOT_DIR="$1"
@@ -49,9 +49,18 @@ shift
 BL_DEV="$1"
 shift
 
-if [ ! -r "$IN_FILE" ]; then
-    die "could not read input tarball"
+if [ -z "$IN_FILES" ]; then
+    die "input file(s) not given"
 fi
+
+OLD_IFS=$IFS
+IFS=;
+for tfile in $IN_FILES; do
+    if [ ! -r "$tfile" ]; then
+        die "could not read input file: $tfile"
+    fi
+done
+IFS=$OLD_IFS
 
 if ! mountpoint -q "$ROOT_DIR"; then
     die "$ROOT_DIR is not a mount point"
@@ -73,7 +82,13 @@ if [ -n "$(tar --version | grep GNU)" ]; then
     _tarargs="--xattrs-include='*'"
 fi
 
-tar -pxf "$IN_FILE" --xattrs $_tarargs -C "$ROOT_DIR"
+OLD_IFS=$IFS
+IFS=;
+for tfile in $IN_FILES; do
+    tar -pxf "$tfile" --xattrs $_tarargs -C "$ROOT_DIR" ||\
+         die "could not extract input file: $file"
+done
+IFS=$OLD_IFS
 
 # use fsck for all file systems other than f2fs
 case "$ROOT_FSTYPE" in

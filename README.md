@@ -160,6 +160,11 @@ Once that is done, you can perform the installation from the tarball:
 # ./unrootfs.sh chimera-linux-aarch64-ROOTFS-...-pbp.tar.gz rootmnt /dev/mmcblk0
 ```
 
+Multiple tarballs can be specified as a single argument, separated by
+semicolons. They are extracted in that order. That means if you are using
+delta tarballs, you should specify the base first and the overlay second,
+like `base-tarball.tar.gz;delta-tarball.tar.gz`.
+
 This will both install the system onto the card and install U-Boot onto the
 card (as it's given as the last argument). If you omit the last argument,
 no bootloader installation will be done.
@@ -202,9 +207,10 @@ The `mkimage.sh` script simplifies creation of device images so that you do
 not have to manipulate loop devices manually. However, it comes at the cost
 of being far less flexible.
 
-It accepts a prepared device rootfs tarball as its file name. Optional
-arguments can be used to set the output file name and the image size (by
-default 2G). It will also automatically compress the image with `gzip`.
+It accepts a prepared device rootfs tarball as its file name, or multiple
+tarballs when using deltas. Optional arguments can be used to set the output
+file name and the image size (by default 2G). It will also automatically
+compress the image with `gzip`.
 
 ```
 # ./mkimage.sh chimera-linux-aarch64-ROOTFS-20220906-rpi.tar.gz -- -j
