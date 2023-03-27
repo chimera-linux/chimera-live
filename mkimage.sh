@@ -109,7 +109,7 @@ PLATFORM="${PLATFORM%%.*}"
 ARCH="${IN_FILE#chimera-linux-}"
 ARCH="${ARCH%-ROOTFS*}"
 
-[ -z "$PLATFORM" -o -z "$ARCH" ] || die "invalid input filename"
+[ -n "$PLATFORM" -a -n "$ARCH" ] || die "invalid input filename"
 
 if [ ! -r "sfdisk/$PLATFORM" ]; then
     die "unknown platform: $PLATFORM"
@@ -137,8 +137,6 @@ msg "Creating and mounting partitions..."
 
 ./mkpart.sh -j "$@" "$LOOP_DEV" "$PLATFORM" "$ROOT_DIR" || \
     die "could not set up target image"
-
-msg "Unpacking rootfs tarball..."
 
 ./unrootfs.sh "$IN_FILE" "$ROOT_DIR" "$LOOP_DEV" || \
     die "could not install Chimera"
