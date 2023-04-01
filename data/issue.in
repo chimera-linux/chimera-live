@@ -7,9 +7,9 @@ Welcome to Chimera Linux. To log in, use either of:
 
 The `@USER@` user is in the group `wheel`, which has `doas(1)` permissions.
 
-To install the system, please follow the documentation. This is a live
-environment that is not installable as it is. Its purpose is to provide
-system evaluation and bootstrap media that you can use to install.
+To install the system, please follow the documentation. Both local and
+network installations are possible from this media, with network install
+being the recommended approach.
 
 Thank you for trying Chimera Linux!
 

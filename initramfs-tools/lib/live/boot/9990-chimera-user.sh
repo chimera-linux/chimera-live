@@ -119,13 +119,6 @@ Chimera_User() {
             "/lib/live/data/issue.in" > /root/etc/issue
     fi
 
-    # chimera-live-*
-    for x in /lib/live/data/chimera-live-*; do
-        [ -f "$x" ] || continue
-        cp $x /root/usr/bin
-        chmod 755 "/root/usr/bin/$(basename $x)"
-    done
-
     chroot /root useradd -m -c "$USERNAME" -s "$USERSHELL" "$USERNAME"
 
     chroot /root sh -c "echo 'root:${USERPASS}'|chpasswd -c SHA512"
