@@ -54,9 +54,12 @@ The platform name is inferred from the last input tarball name.
 If multiple tarballs are specified, they are to be separated with
 semicolons.
 
+Compression methods: none, gz
+
 Options:
  -o FILE  Output file name (default: chimera-linux-<arch>-IMAGE-<date>-<platform>.img)
  -s SIZE  The image size (default: 2G)
+ -c TYPE  Compress the image with TYPE (default: gz)
  -h       Print this message.
 EOF
     exit ${1:=1}
@@ -75,11 +78,13 @@ OUT_FILE=
 PLATFORM=
 LOOP_DEV=
 ARCH=
+COMP=gz
 
-while getopts "o:s:h" opt; do
+while getopts "o:s:c:h" opt; do
     case "$opt" in
         o) OUT_FILE="$OPTARG" ;;
         s) IMAGE_SIZE="$OPTARG";;
+        c) COMP="$OPTARG";;
         h) usage 0 ;;
         *) usage ;;
     esac
@@ -89,6 +94,11 @@ shift $((OPTIND - 1))
 
 IN_FILES="$1"
 shift
+
+case "$COMP" in
+    gz|none) ;;
+    *) die "invalid compression method: $COMP" ;;
+esac
 
 if [ -z "$IN_FILES" ]; then
     die "input file(s) not given"
@@ -161,7 +171,9 @@ ROOT_DIR=
 losetup -d "$LOOP_DEV" || die "failed to detach loop device"
 LOOP_DEV=
 
-msg "Compressing image..."
-gzip -9 "$OUT_FILE"
+if [ "$COMP" != "none" ]; then
+    msg "Compressing image..."
+    gzip -9 "$OUT_FILE"
+fi
 
 msg "Successfully generated image (${OUT_FILE}.gz)."
