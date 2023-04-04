@@ -133,6 +133,9 @@ Chimera_User() {
         echo "$USERNAME ALL=(ALL) ALL" >> /root/etc/sudoers
     fi
 
+    # create boot.d as tmpfiles has not yet run
+    chroot /root mkdir -p "/etc/dinit.d/boot.d"
+
     # enable default services
     Chimera_Service rtkit
     Chimera_Service polkitd
