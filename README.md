@@ -24,6 +24,8 @@ In order to bootstrap the system into a directory (e.g. a partitioned and
 mounted root file system), you can use just plain `apk`. The tooling here
 is generally written around similar methods.
 
+You can get prebuilt `apk` [here](https://repo.chimera-linux.org/apk).
+
 First, bootstrap your root with a package that is safe to install without
 pseudo-filesystems mounted in the target. That means `chimerautils`,
 as every base metapackage installs stuff that needs scripts.
