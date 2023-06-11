@@ -69,6 +69,7 @@ make_rootfs() {
 make_rootfs bootstrap "$@"
 make_rootfs minimal "$@"
 make_rootfs core "$@"
+make_rootfs full "$@"
 
 make_device() {
     make_rootfs "$@"
