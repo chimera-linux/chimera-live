@@ -31,7 +31,7 @@ Options:
  -o FILE      Output a FILE (default: chimera-linux-ARCH-${TAR_TYPE}-YYYYMMDD(-FLAVOR).tar.gz)
  -f FLAVOR    Flavor name to include in default output file name
  -r REPO      Path to apk repository.
- -k KEY       Path to apk repository public key.
+ -k DIR       Path to apk repository public key directory.
  -p PACKAGES  List of additional packages to install.
  -h           Print this message.
 EOF
@@ -62,7 +62,7 @@ while getopts "a:b:B:f:k:o:p:r:h" opt; do
         a) APK_ARCH="$OPTARG";;
         b) PKG_BASE="$OPTARG";;
         f) FLAVOR="-$OPTARG";;
-        k) APK_KEY="$OPTARG";;
+        k) APK_KEYDIR="$OPTARG";;
         K) KERNVER="$OPTARG";;
         o) OUT_FILE="$OPTARG";;
         p) PACKAGES="$OPTARG";;
@@ -101,12 +101,12 @@ for f in ${APK_REPO}; do
     esac
 done
 
-if [ -z "$APK_KEY" ]; then
-    APK_KEY="keys/q66@chimera-linux.org-61a1913b.rsa.pub"
+if [ -z "$APK_KEYDIR" ]; then
+    APK_KEYDIR="keys"
 fi
 
-if [ ! -f "$APK_KEY" ]; then
-    die "must provide a valid public key"
+if [ ! -d "$APK_KEYDIR" ]; then
+    die "must provide a valid public key directory"
 fi
 
 if [ -n "$1" ]; then
@@ -143,13 +143,15 @@ if [ -n "$BASE_TAR" ]; then
 
     TAR_DIR="${ROOT_UPPER}"
 else
-    # copy key
-    msg "Copying signing key..."
+    # copy keys
+    msg "Copying signing keys..."
 
     mkdir -p "${ROOT_DIR}/etc/apk/keys" || \
         die "failed to create keys directory"
-    cp "${APK_KEY}" "${ROOT_DIR}/etc/apk/keys" || \
-        die "failed to copy signing key"
+    for k in "${APK_KEYDIR}"/*.pub; do
+        [ -r "$k" ] || continue
+        cp "$k" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy key '$k'"
+    done
 
     # install target packages
     msg "Installing target base packages..."
