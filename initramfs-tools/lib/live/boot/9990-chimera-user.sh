@@ -8,12 +8,6 @@ Chimera_Service() {
     fi
 }
 
-Chimera_Userserv() {
-    if [ -f /root/etc/dinit.d/user/$1 ]; then
-        ln -sf ../$1 /root/home/$2/.config/dinit.d/boot.d/$1
-    fi
-}
-
 Chimera_Getty() {
     local ttyn speed dspeed cflags confname gargs
     # sanitize the input string a bit
@@ -176,13 +170,6 @@ Chimera_User() {
             Chimera_Getty "$_TTYN"
         done
     fi
-
-    # enable user services
-    chroot /root mkdir -p "/home/${USERNAME}/.config/dinit.d/boot.d"
-    Chimera_Userserv pipewire-pulse "$USERNAME"
-    Chimera_Userserv wireplumber "$USERNAME"
-    # fix up permissions
-    chroot /root chown -R "${USERNAME}:${USERNAME}" "/home/${USERNAME}"
 
     log_end_msg
 }
