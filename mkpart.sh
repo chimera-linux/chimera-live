@@ -176,6 +176,22 @@ case "$ROOT_FSTYPE" in
         ;;
 esac
 
+# label the partitions
+
+add_fslabel() {
+    case "$1" in
+        ext*|xfs|btrfs) echo "-L $2" ;;
+        f2fs) echo "-l $2" ;;
+        vfat) echo "-n "$(echo $2|tr 'a-z' 'A-Z') ;;
+    esac
+}
+
+BOOT_LABEL=$(add_fslabel "$BOOT_FSTYPE" boot)
+ROOT_LABEL=$(add_fslabel "$ROOT_FSTYPE" root)
+
+BOOT_MKARGS="$BOOT_LABEL $BOOT_MKARGS"
+ROOT_MKARGS="$ROOT_LABEL $ROOT_MKARGS"
+
 # create filesystems
 
 mkfs.${BOOT_FSTYPE} ${BOOT_MKARGS} "${BOOT_DEV}" \
