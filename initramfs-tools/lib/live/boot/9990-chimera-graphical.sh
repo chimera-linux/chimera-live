@@ -25,6 +25,11 @@ sleep-inactive-ac-type='nothing'
 sleep-inactive-battery-type='nothing'
 power-button-action='interactive'
 EOF
+        # set appropriate homepage for GNOME Web
+        cat << EOF > /root/etc/dconf/db/local.d/02-epiphany-homepage
+[org/gnome/epiphany]
+homepage-url='https://chimera-linux.org'
+EOF
         # refresh
         chroot /root dconf update
     fi
