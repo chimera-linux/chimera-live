@@ -52,7 +52,7 @@ fi
 APK_ARCH=$(${APK_BIN} --print-arch)
 
 run_apk() {
-    "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@"
+    "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@" --no-interactive
 }
 
 while getopts "a:b:B:f:k:o:p:r:h" opt; do
