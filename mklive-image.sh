@@ -11,10 +11,12 @@
 
 IMAGE=
 EXTRA_PKGS=
+KERNEL_PKGS=
 
-while getopts "b:p:" opt; do
+while getopts "b:k:p:" opt; do
     case "$opt" in
         b) IMAGE="$OPTARG";;
+        k) KERNEL_PKGS="$OPTARG";;
         p) EXTRA_PKGS="$OPTARG";;
         *) ;;
     esac
@@ -22,7 +24,11 @@ done
 
 shift $((OPTIND - 1))
 
-readonly BASE_PKGS="cryptsetup-scripts lvm2 zfs linux-lts-zfs-bin firmware-wifi firmware-linux-soc ${EXTRA_PKGS}"
+if [ -z "$KERNEL_PKGS" ]; then
+    KERNEL_PKGS="linux-lts linux-lts-zfs-bin zfs"
+fi
+
+readonly BASE_PKGS="cryptsetup-scripts lvm2 firmware-wifi firmware-linux-soc ${KERNEL_PKGS} ${EXTRA_PKGS}"
 
 case "$IMAGE" in
     base)
