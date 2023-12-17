@@ -28,7 +28,7 @@ if [ -z "$KERNEL_PKGS" ]; then
     KERNEL_PKGS="linux-lts linux-lts-zfs-bin zfs"
 fi
 
-readonly BASE_PKGS="cryptsetup-scripts lvm2 firmware-wifi firmware-linux-soc ${KERNEL_PKGS} ${EXTRA_PKGS}"
+readonly BASE_PKGS="cryptsetup-scripts lvm2 firmware-linux-soc ${KERNEL_PKGS} ${EXTRA_PKGS}"
 
 case "$IMAGE" in
     base)
