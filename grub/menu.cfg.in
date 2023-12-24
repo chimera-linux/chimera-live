@@ -5,6 +5,14 @@ set pager="1"
 set timeout="10"
 set default="chimera-live"
 
+set locale_dir="${prefix}/locale"
+
+# don't actually use gfxterm, as we might be running from serial console
+if loadfont unicode; then
+    set gfxmode=auto
+    insmod all_video
+fi
+
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id chimera-live {
     linux /live/@@KERNFILE@@ boot=live init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
