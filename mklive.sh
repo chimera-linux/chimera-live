@@ -49,10 +49,6 @@ if ! command -v gensquashfs > /dev/null 2>&1; then
     die "gensquashfs needs to be installed (squashfs-tools-ng)"
 fi
 
-if ! command -v xorriso > /dev/null 2>&1; then
-    die "xorriso needs to be installed"
-fi
-
 APK_ARCH=$(${APK_BIN} --print-arch)
 
 run_apk() {
