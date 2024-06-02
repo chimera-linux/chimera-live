@@ -4,7 +4,7 @@ under the terms of the GPLv3.
 
 Files that are not a part of live-boot are individually licensed as follows:
 
-Copyright 2022 Daniel "q66" Kolesa
+Copyright 2022-2024 Chimera Linux developers
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
