@@ -35,7 +35,7 @@ It is important to use `--initdb`, and it is also very important to have
 versions will mess up permissions on the initial files.
 
 ```
-# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb add chimerautils
+# apk add --root /my/root --keys-dir /my/cports/etc/keys --repository /my/cports/packages/main --initdb chimerautils
 ```
 
 More advanced base metapackages may require pseudo-filesystems in their hooks.
