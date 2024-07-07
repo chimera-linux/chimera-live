@@ -257,6 +257,12 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
       "${ROOT_DIR}/etc/passwd-" "${ROOT_DIR}/etc/group-" \
       "${ROOT_DIR}/etc/subuid-" "${ROOT_DIR}/etc/subgid-"
 
+# clean up tmpfiles with xattrs not supported by squashfs
+# (sd-tmpfiles will recreate them as necessary)
+#
+# this list may be expanded as needed
+rm -rf "${ROOT_DIR}/var/lib/tpm2-tss/system/keystore"
+
 # generate squashfs
 msg "Generating squashfs filesystem..."
 
