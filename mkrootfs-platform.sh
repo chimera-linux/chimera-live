@@ -26,14 +26,12 @@ BASE_PKG="base-full"
 PLAT_PKG=
 KERNEL_PKG=
 
-PLATFORMS="bootstrap core minimal full rpi pbp rockpro64 unmatched"
+PLATFORMS="bootstrap full rpi pbp rockpro64 unmatched"
 
 for pkg in ${PLATFORMS}; do
     if [ "$pkg" = "$PLATFORM" ]; then
         case "$PLATFORM" in
             bootstrap) BASE_PKG="base-bootstrap" ;;
-            minimal) BASE_PKG="base-minimal" ;;
-            core) BASE_PKG="base-core" ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
             *) KERNEL_PKG="linux-lts" ;;
         esac
@@ -45,7 +43,7 @@ done
 
 echo "unknown PLATFORM type: $PLATFORM"
 echo
-echo "supported platform types: full core minimal bootstrap"
+echo "supported platform types: full bootstrap"
 echo "                          rpi pbp rockpro64"
 echo "                          unmatched"
 exit 1

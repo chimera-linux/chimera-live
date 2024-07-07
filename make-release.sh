@@ -52,7 +52,7 @@ if ! check_stamp live-gnome; then
     touch_stamp live-gnome
 fi
 
-# bootstrap, minimal and core rootfses for every target
+# bootstrap and full rootfses for every target
 
 make_rootfs() {
     ROOT_TYPE="$1"
@@ -67,8 +67,6 @@ make_rootfs() {
 }
 
 make_rootfs bootstrap "$@"
-make_rootfs minimal "$@"
-make_rootfs core "$@"
 make_rootfs full "$@"
 
 make_device() {
