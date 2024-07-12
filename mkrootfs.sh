@@ -9,7 +9,7 @@
 
 . ./lib.sh
 
-PKG_BASE="base-core"
+PKG_BASE="base-full"
 
 if [ -n "$MKROOTFS_ROOT_DIR" ]; then
     ROOT_DIR="$MKROOTFS_ROOT_DIR"
@@ -26,7 +26,7 @@ Usage: $PROGNAME [opts] [ROOT_DIR]
 Options:
  -A APK       Override the apk tool (default: apk)
  -a ARCH      Generate an image for ARCH (must be runnable on current machine)
- -b PACKAGE   The base package (default: base-core)
+ -b PACKAGE   The base package (default: base-full)
  -B TARBALL   Generate a delta tarball against TARBALL
  -o FILE      Output a FILE (default: chimera-linux-ARCH-${TAR_TYPE}-YYYYMMDD(-FLAVOR).tar.gz)
  -f FLAVOR    Flavor name to include in default output file name

@@ -119,18 +119,14 @@ Its basic usage is like this (as root):
 ```
 
 It only takes two optional arguments, `-P PLATFORM` and `-p EXTRA_PACKAGES`.
-The `PLATFORM` is the supported platform type (represented by`core` which is the
-`mkrootfs.sh` default of using `base-core`, `minimal` which uses `base-minimal`
-and then device-specific platform images such as `rpi` and `pbp`).
+The `PLATFORM` is the supported platform type (represented by `full` which is
+the `mkrootfs.sh` default of using `base-full` and then device-specific platform
+images such as `rpi` and `pbp`).
 
 The `mkrootfs.sh` script takes largely identical arguments to `mklive.sh` (see `-h`)
 but instead of ISO images, it creates root file system tarballs. Running it without
 arguments will create a basic root file system tarball using remote repositories.
-The `base-core` metapackage is the default, but you can override it, e.g.
-
-```
-# ./mkrootfs.sh -b base-minimal
-```
+The `base-full` metapackage is the default, but you can override it.
 
 The `mkrootfs.sh` is also capable of creating delta tarballs. The invocation
 only differs in that you pass a base tarball (previously created with the same
