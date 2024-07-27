@@ -32,6 +32,7 @@ for pkg in ${PLATFORMS}; do
     if [ "$pkg" = "$PLATFORM" ]; then
         case "$PLATFORM" in
             bootstrap) BASE_PKG="base-bootstrap" ;;
+            full) ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
             *) KERNEL_PKG="linux-lts" ;;
         esac
