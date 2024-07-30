@@ -114,4 +114,27 @@ if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
     "${ROOT_DIR}/usr/bin/install-u-boot" "${BL_DEV}" "${ROOT_DIR}"
 fi
 
+# TODO(yoctozepto): support UEFI on arm64 (aarch64)
+if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/usr/lib/grub/x86_64-efi" ]; then
+    # NOTE(yoctozepto): /dev/disk/by-uuid must exist for update-grub to do the right thing
+    [ -d /dev/disk/by-uuid ] || die "/dev/disk/by-uuid not found, update-grub would be misled"
+    # TODO(yoctozepto): try with systemd-boot instead
+    # TODO(yoctozepto): separate /boot and /boot/efi
+    chimera-chroot ${ROOT_DIR} <<EOF
+set -e
+grub-install --target x86_64-efi --efi-directory /boot --no-nvram --removable
+update-initramfs -c -k all
+update-grub
+cat > /etc/default/agetty << EOF2
+EXTRA_GETTYS="/dev/ttyS0"
+EOF2
+cat > /etc/default/agetty-ttyS0 << EOF2
+GETTY_BAUD="115200"
+EOF2
+EOF
+    if [ $? -ne 0 ]; then
+        die "Installing GRUB failed."
+    fi
+fi
+
 msg "Successfully installed Chimera."
