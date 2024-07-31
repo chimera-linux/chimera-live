@@ -10,20 +10,7 @@
 # License: BSD-2-Clause
 #
 
-readonly PROGNAME=$(basename "$0")
-
-msg() {
-    printf "\033[1m$@\n\033[m"
-}
-
-die() {
-    msg "ERROR: $@"
-    exit 1
-}
-
-if [ "$(id -u)" != "0" ]; then
-    die "must be run as root"
-fi
+. ./lib.sh
 
 usage() {
     cat <<EOF
@@ -116,11 +103,12 @@ fi
 
 # TODO(yoctozepto): support UEFI on arm64 (aarch64)
 if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/usr/lib/grub/x86_64-efi" ]; then
+    mount_pseudo
     # NOTE(yoctozepto): /dev/disk/by-uuid must exist for update-grub to do the right thing
     [ -d /dev/disk/by-uuid ] || die "/dev/disk/by-uuid not found, update-grub would be misled"
     # TODO(yoctozepto): try with systemd-boot instead
     # TODO(yoctozepto): separate /boot and /boot/efi
-    chimera-chroot ${ROOT_DIR} <<EOF
+    chroot ${ROOT_DIR} /bin/sh -i <<EOF
 set -e
 grub-install --target x86_64-efi --efi-directory /boot --no-nvram --removable
 update-initramfs -c -k all
