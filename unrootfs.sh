@@ -101,27 +101,24 @@ if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
     "${ROOT_DIR}/usr/bin/install-u-boot" "${BL_DEV}" "${ROOT_DIR}"
 fi
 
-# TODO(yoctozepto): support UEFI on arm64 (aarch64)
-if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/usr/lib/grub/x86_64-efi" ]; then
+if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/systemd-boot" ]; then
+    [ -d /dev/disk/by-uuid ] || die "/dev/disk/by-uuid not found, gen-systemd-boot would be misled"
     mount_pseudo
-    # NOTE(yoctozepto): /dev/disk/by-uuid must exist for update-grub to do the right thing
-    [ -d /dev/disk/by-uuid ] || die "/dev/disk/by-uuid not found, update-grub would be misled"
-    # TODO(yoctozepto): try with systemd-boot instead
-    # TODO(yoctozepto): separate /boot and /boot/efi
+    # NOTE(yoctozepto): aarch64 requires console= config, else it hangs (as of 20240731 on EC2 t4g)
+    # TODO(yoctozepto): aarch64 rootfs already has the initramfs
+    # TODO(yoctozepto): aarch64 rootfs includes many dtbs
     chroot ${ROOT_DIR} /bin/sh -i <<EOF
 set -e
-grub-install --target x86_64-efi --efi-directory /boot --no-nvram --removable
+bootctl install --no-variables
 update-initramfs -c -k all
-update-grub
+echo 'SD_BOOT_CMDLINE="console=tty0 console=ttyS0"' >> /etc/default/systemd-boot
+gen-systemd-boot
 cat > /etc/default/agetty << EOF2
 EXTRA_GETTYS="/dev/ttyS0"
 EOF2
-cat > /etc/default/agetty-ttyS0 << EOF2
-GETTY_BAUD="115200"
-EOF2
 EOF
     if [ $? -ne 0 ]; then
-        die "Installing GRUB failed."
+        die "Installing systemd-boot failed."
     fi
 fi
 

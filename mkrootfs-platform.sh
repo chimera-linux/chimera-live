@@ -34,7 +34,7 @@ for pkg in ${PLATFORMS}; do
             bootstrap) BASE_PKG="base-bootstrap" ;;
             full) ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
-            ec2) PLAT_PKG="grub-x86_64-efi !base-full-firmware"; KERNEL_PKG="linux-lts" ;;
+            ec2) PLAT_PKG="systemd-boot !base-full-firmware"; KERNEL_PKG="linux-lts" ;;
             *) KERNEL_PKG="linux-lts" ;;
         esac
         exec ./mkrootfs.sh -b "$BASE_PKG" \
