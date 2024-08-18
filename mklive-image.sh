@@ -37,6 +37,9 @@ case "$IMAGE" in
     gnome)
         PKGS="${BASE_PKGS} gnome"
         ;;
+    plasma)
+        PKGS="${BASE_PKGS} plasma-desktop xserver-xorg"
+        ;;
     *)
         echo "unknown image type: $IMAGE"
         echo

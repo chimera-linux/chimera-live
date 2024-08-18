@@ -51,5 +51,17 @@ AutomaticLogin=anon
 EOF
     fi
 
+    if [ -f "/root/etc/dinit.d/sddm" ]; then
+        # enable service
+        Chimera_Service sddm
+        # autologin
+        mkdir -p /root/etc/sddm.conf.d
+        cat > /root/etc/sddm.conf.d/autologin.conf << EOF
+[Autologin]
+User=anon
+Session=plasma
+EOF
+    fi
+
     log_end_msg
 }
