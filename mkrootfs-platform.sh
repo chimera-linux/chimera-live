@@ -23,10 +23,10 @@ done
 shift $((OPTIND - 1))
 
 BASE_PKG="base-full"
-PLAT_PKG=
+PLAT_PKG="base-$PLATFORM"
 KERNEL_PKG=
 
-PLATFORMS="bootstrap full rpi pbp rockpro64 unmatched"
+PLATFORMS="bootstrap full rpi pbp rockpro64 unmatched ec2"
 
 for pkg in ${PLATFORMS}; do
     if [ "$pkg" = "$PLATFORM" ]; then
@@ -34,10 +34,11 @@ for pkg in ${PLATFORMS}; do
             bootstrap) BASE_PKG="base-bootstrap" ;;
             full) ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
+            ec2) PLAT_PKG="systemd-boot !base-full-firmware"; KERNEL_PKG="linux-lts" ;;
             *) KERNEL_PKG="linux-lts" ;;
         esac
         exec ./mkrootfs.sh -b "$BASE_PKG" \
-            -p "base-$PLATFORM $KERNEL_PKG $EXTRA_PKGS" \
+            -p "$PLAT_PKG $KERNEL_PKG $EXTRA_PKGS" \
             -f "$PLATFORM" "$@"
     fi
 done
@@ -46,5 +47,5 @@ echo "unknown PLATFORM type: $PLATFORM"
 echo
 echo "supported platform types: full bootstrap"
 echo "                          rpi pbp rockpro64"
-echo "                          unmatched"
+echo "                          unmatched ec2"
 exit 1

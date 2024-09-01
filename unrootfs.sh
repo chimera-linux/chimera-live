@@ -10,20 +10,7 @@
 # License: BSD-2-Clause
 #
 
-readonly PROGNAME=$(basename "$0")
-
-msg() {
-    printf "\033[1m$@\n\033[m"
-}
-
-die() {
-    msg "ERROR: $@"
-    exit 1
-}
-
-if [ "$(id -u)" != "0" ]; then
-    die "must be run as root"
-fi
+. ./lib.sh
 
 usage() {
     cat <<EOF
@@ -112,6 +99,27 @@ msg "Setting up bootloader..."
 
 if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
     "${ROOT_DIR}/usr/bin/install-u-boot" "${BL_DEV}" "${ROOT_DIR}"
+fi
+
+if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/systemd-boot" ]; then
+    [ -d /dev/disk/by-uuid ] || die "/dev/disk/by-uuid not found, gen-systemd-boot would be misled"
+    mount_pseudo
+    # NOTE(yoctozepto): aarch64 requires console= config, else it hangs (as of 20240731 on EC2 t4g)
+    # TODO(yoctozepto): aarch64 rootfs already has the initramfs
+    # TODO(yoctozepto): aarch64 rootfs includes many dtbs
+    chroot ${ROOT_DIR} /bin/sh -i <<EOF
+set -e
+bootctl install --no-variables
+update-initramfs -c -k all
+echo 'SD_BOOT_CMDLINE="console=tty0 console=ttyS0"' >> /etc/default/systemd-boot
+gen-systemd-boot
+cat > /etc/default/agetty << EOF2
+EXTRA_GETTYS="/dev/ttyS0"
+EOF2
+EOF
+    if [ $? -ne 0 ]; then
+        die "Installing systemd-boot failed."
+    fi
 fi
 
 msg "Successfully installed Chimera."
