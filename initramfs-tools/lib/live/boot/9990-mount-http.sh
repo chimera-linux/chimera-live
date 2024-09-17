@@ -15,7 +15,7 @@ do_httpmount ()
 		if [ -n "$url" ]
 		then
 			case "${extension}" in
-				iso|squashfs|tgz|tar)
+				iso|squashfs|erofs|tgz|tar)
 					if [ "${extension}" = "iso" ]
 					then
 						mkdir -p "${alt_mountpoint}"

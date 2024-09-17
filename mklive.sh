@@ -34,19 +34,17 @@ Options:
  -r REPO      Path to apk repository.
  -k DIR       Path to apk repository public key directory.
  -p PACKAGES  List of additional packages to install.
+ -s FSTYPE    Filesystem to use (squashfs or erofs, default: erofs)
  -h           Print this message.
 EOF
     exit ${1:=1}
 }
 
 APK_BIN="apk"
+FSTYPE="erofs"
 
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
-fi
-
-if ! command -v gensquashfs > /dev/null 2>&1; then
-    die "gensquashfs needs to be installed (squashfs-tools-ng)"
 fi
 
 APK_ARCH=$(${APK_BIN} --print-arch)
@@ -65,10 +63,25 @@ while getopts "a:f:k:o:p:r:h" opt; do
         o) OUT_FILE="$OPTARG";;
         p) PACKAGES="$OPTARG";;
         r) APK_REPO="$APK_REPO --repository $OPTARG";;
+        s) FSTYPE="$OPTARG";;
         h) usage 0 ;;
         *) usage ;;
     esac
 done
+
+case "$FSTYPE" in
+    squashfs)
+        if ! command -v gensquashfs > /dev/null 2>&1; then
+            die "gensquashfs needs to be installed (squashfs-tools-ng)"
+        fi
+        ;;
+    erofs)
+        if ! command -v mkfs.erofs > /dev/null 2>&1; then
+            die "mkfs.erofs needs to be installed (erofs-utils)"
+        fi
+        ;;
+    *) die "unknown live filesystem (${FSTYPE})" ;;
+esac
 
 shift $((OPTIND - 1))
 
@@ -257,19 +270,34 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
       "${ROOT_DIR}/etc/passwd-" "${ROOT_DIR}/etc/group-" \
       "${ROOT_DIR}/etc/subuid-" "${ROOT_DIR}/etc/subgid-"
 
-# clean up tmpfiles with xattrs not supported by squashfs
-# (sd-tmpfiles will recreate them as necessary)
-#
-# this list may be expanded as needed
-rm -rf "${ROOT_DIR}/var/lib/tpm2-tss/system/keystore"
+case "$FSTYPE" in
+    squashfs)
+        # clean up tmpfiles with xattrs not supported by squashfs
+        # (sd-tmpfiles will recreate them as necessary)
+        #
+        # this list may be expanded as needed
+        rm -rf "${ROOT_DIR}/var/lib/tpm2-tss/system/keystore"
+        ;;
+esac
 
-# generate squashfs
-msg "Generating squashfs filesystem..."
+# generate filesystem
+msg "Generating root filesystem..."
 
 umount_pseudo
 
-gensquashfs --pack-dir "${ROOT_DIR}" -c xz -k -x \
-    "${LIVE_DIR}/filesystem.squashfs" || die "gensquashfs failed"
+case "$FSTYPE" in
+    squashfs)
+        gensquashfs --pack-dir "${ROOT_DIR}" -c xz -k -x \
+            "${LIVE_DIR}/filesystem.squashfs" || die "gensquashfs failed"
+        ;;
+    erofs)
+        # tried zstd, it's quite a bit bigger than xz... and experimental
+        # when testing, level=3 is 1.9% bigger than 16 and 0.7% bigger than 9
+        # ztailpacking has measurable space savings, fragments+dedupe does not
+        mkfs.erofs -z lzma -E ztailpacking "${LIVE_DIR}/filesystem.erofs" \
+            "${ROOT_DIR}" || die "mkfs.erofs failed"
+        ;;
+esac
 
 # generate iso image
 msg "Generating ISO image..."

@@ -151,6 +151,9 @@ manual_add_modules squashfs
 manual_add_modules sqlzma
 manual_add_modules unlzma
 
+# Filesystem: erofs
+manual_add_modules erofs
+
 # Filesystem: overlay
 manual_add_modules overlay
 

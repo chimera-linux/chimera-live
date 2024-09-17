@@ -5,7 +5,7 @@
 is_live_path()
 {
 	DIRECTORY="${1}/${LIVE_MEDIA_PATH}"
-	for FILESYSTEM in squashfs ext2 ext3 ext4 xfs dir jffs
+	for FILESYSTEM in squashfs erofs ext2 ext3 ext4 xfs dir jffs
 	do
 		if ls "${DIRECTORY}/"*.${FILESYSTEM} > /dev/null 2>&1
 		then
@@ -43,7 +43,7 @@ matches_uuid ()
 get_backing_device ()
 {
 	case "${1}" in
-		*.squashfs|*.ext2|*.ext3|*.ext4|*.jffs2|*.*.verity|*.*.fec)
+		*.squashfs|*.erofs|*.ext2|*.ext3|*.ext4|*.jffs2|*.*.verity|*.*.fec)
 			echo $(setup_loop "${1}" "loop" "/sys/block/loop*" '0' "${2}")
 			;;
 
@@ -356,6 +356,7 @@ find_livefs ()
 				fi
 			done
 		elif [ "${fstype}" = "squashfs" -o \
+			"${fstype}" = "erofs" -o \
 			"${fstype}" = "btrfs" -o \
 			"${fstype}" = "ext2" -o \
 			"${fstype}" = "ext3" -o \

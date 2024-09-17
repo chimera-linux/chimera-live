@@ -37,7 +37,7 @@ setup_unionfs ()
 			done
 		else
 			# ${MODULE}.module does not exist, create a list of images
-			for FILESYSTEM in squashfs ext2 ext3 ext4 xfs jffs2 dir
+			for FILESYSTEM in squashfs erofs ext2 ext3 ext4 xfs jffs2 dir
 			do
 				for IMAGE in "${image_directory}"/*."${FILESYSTEM}"
 				do
@@ -50,7 +50,7 @@ setup_unionfs ()
 
 			if [ -n "${addimage_directory}" ] && [ -d "${addimage_directory}" ]
 			then
-				for FILESYSTEM in squashfs ext2 ext3 ext4 xfs jffs2 dir
+				for FILESYSTEM in squashfs erofs ext2 ext3 ext4 xfs jffs2 dir
 				do
 					for IMAGE in "${addimage_directory}"/*."${FILESYSTEM}"
 					do
