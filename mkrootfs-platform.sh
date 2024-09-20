@@ -34,7 +34,7 @@ for pkg in ${PLATFORMS}; do
             bootstrap) BASE_PKG="base-bootstrap" ;;
             full) ;;
             rpi) KERNEL_PKG="linux-rpi" ;;
-            *) KERNEL_PKG="linux-lts" ;;
+            *) KERNEL_PKG="linux-stable" ;;
         esac
         exec ./mkrootfs.sh -b "$BASE_PKG" \
             -p "base-$PLATFORM $KERNEL_PKG $EXTRA_PKGS" \
