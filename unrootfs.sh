@@ -5,7 +5,7 @@
 # This script installs a Chimera system from a device tarball into
 # a mounted filesystem, set up e.g. via the mkpart.sh script.
 #
-# Copyright 2023 Daniel "q66" Kolesa
+# Copyright 2023 q66 <q66@chimera-linux.org>
 #
 # License: BSD-2-Clause
 #

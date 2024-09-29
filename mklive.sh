@@ -2,7 +2,7 @@
 #
 # Chimera Linux live image creation tool
 #
-# Copyright 2022 Daniel "q66" Kolesa
+# Copyright 2022 q66 <q66@chimera-linux.org>
 #
 # License: BSD-2-Clause
 #

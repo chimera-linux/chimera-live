@@ -4,7 +4,7 @@
 
 # all extra arguments are passed to mklive.sh as is
 #
-# Copyright 2022 Daniel "q66" Kolesa
+# Copyright 2022 q66 <q66@chimera-linux.org>
 #
 # License: BSD-2-Clause
 #

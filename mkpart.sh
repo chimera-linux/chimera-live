@@ -6,7 +6,7 @@
 # a device or with a known layout, and creates appropriate filesystems. The
 # result is mounted in a way that can be accepted by the other stages.
 #
-# Copyright 2023 Daniel "q66" Kolesa
+# Copyright 2023 q66 <q66@chimera-linux.org>
 #
 # License: BSD-2-Clause
 #

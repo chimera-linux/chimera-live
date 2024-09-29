@@ -6,7 +6,7 @@
 # primarily exists to create device images for release. All additional
 # arguments are passed to mkpart.sh.
 #
-# Copyright 2023 Daniel "q66" Kolesa
+# Copyright 2023 q66 <q66@chimera-linux.org>
 #
 # License: BSD-2-Clause
 #
