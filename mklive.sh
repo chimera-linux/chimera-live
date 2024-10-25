@@ -53,7 +53,7 @@ run_apk() {
     "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@" --no-interactive
 }
 
-while getopts "a:f:k:o:p:r:h" opt; do
+while getopts "a:f:k:o:p:r:s:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
