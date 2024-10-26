@@ -3,7 +3,7 @@
 # a part of chimera linux, license: BSD-2-Clause
 
 Chimera_Service() {
-    if [ -f /root/etc/dinit.d/$1 ]; then
+    if [ -f /root/etc/dinit.d/$1 -o -f /root/usr/lib/dinit.d/$1 ]; then
         ln -sf ../$1 /root/etc/dinit.d/boot.d/$1
     fi
 }
@@ -27,7 +27,7 @@ Chimera_Getty() {
         console) return 0 ;;
         *)
             # check if we have a matching agetty
-            if [ ! -f "/root/etc/dinit.d/agetty-$ttyn" ]; then
+            if [ ! -f "/root/etc/dinit.d/agetty-$ttyn" -a ! -f "/root/usr/lib/dinit.d/agetty-$ttyn" ]; then
                 return 0
             fi
             ;;
@@ -136,7 +136,7 @@ Chimera_User() {
     Chimera_Service syslog-ng
 
     # use networkmanager if installed, e.g. for gnome integration
-    if [ -f "/root/etc/dinit.d/networkmanager" ]; then
+    if [ -f "/root/usr/lib/dinit.d/networkmanager" ]; then
         Chimera_Service networkmanager
     else
         Chimera_Service dhcpcd

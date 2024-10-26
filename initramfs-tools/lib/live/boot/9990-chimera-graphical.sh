@@ -40,7 +40,7 @@ EOF
         return
     fi
 
-    if [ -f "/root/etc/dinit.d/gdm" ]; then
+    if [ -f "/root/usr/lib/dinit.d/gdm" ]; then
         # enable service
         Chimera_Service gdm
         # autologin
@@ -51,7 +51,7 @@ AutomaticLogin=anon
 EOF
     fi
 
-    if [ -f "/root/etc/dinit.d/sddm" ]; then
+    if [ -f "/root/usr/lib/dinit.d/sddm" ]; then
         # enable service
         Chimera_Service sddm
         # autologin
