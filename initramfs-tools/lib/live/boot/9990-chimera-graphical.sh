@@ -30,6 +30,13 @@ EOF
 [org/gnome/epiphany]
 homepage-url='https://chimera-linux.org'
 EOF
+        # disable gnome tour because it's annoying
+        if [ -x /root/usr/bin/gnome-shell ]; then
+            cat << EOF > /root/etc/dconf/db/local.d/03-no-gnome-tour
+[org/gnome/shell]
+welcome-dialog-last-shown-version='$(chroot /root gnome-shell --version | sed 's,GNOME Shell ,,')'
+EOF
+        fi
         # refresh
         chroot /root dconf update
     fi
