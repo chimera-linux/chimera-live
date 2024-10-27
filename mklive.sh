@@ -295,14 +295,6 @@ msg "Generating ISO image..."
 
 mount_pseudo
 
-# check if to add graphical menu
-#
-# when adding stuff for more desktops/display managers,
-# adjust accordingly and also adjust the initramfs hooks
-if [ -f "${ROOT_DIR}/etc/dinit.d/gdm" ]; then
-    GRAPHICAL=1
-fi
-
 generate_grub_menu() {
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
@@ -316,10 +308,6 @@ generate_grub_menu() {
 mkdir -p "${BOOT_DIR}/grub"
 
 generate_grub_menu > "${BOOT_DIR}/grub/grub.cfg"
-if [ -n "$GRAPHICAL" ]; then
-    echo >> "${BOOT_DIR}/grub/grub.cfg"
-    generate_grub_menu _gui >> "${BOOT_DIR}/grub/grub.cfg"
-fi
 
 mount --bind "${IMAGE_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
 
