@@ -13,7 +13,7 @@
 
 . ./lib.sh
 
-PACKAGES="base-full"
+PACKAGES="base-full linux-stable"
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
@@ -32,7 +32,7 @@ Options:
  -f FLAVOR    Flavor name to include in default iso name
  -r REPO      Path to apk repository.
  -k DIR       Path to apk repository public key directory.
- -p PACKAGES  List of packages to install (default: base-full).
+ -p PACKAGES  List of packages to install (default: base-full linux-stable).
  -s FSTYPE    Filesystem to use (squashfs or erofs, default: erofs)
  -h           Print this message.
 EOF
