@@ -52,6 +52,13 @@ if ! check_stamp live-gnome; then
     touch_stamp live-gnome
 fi
 
+echo "LIVE: plasma"
+if ! check_stamp live-plasma; then
+    MKLIVE_BUILD_DIR=build-live-plasma-$APK_ARCH ./mklive-image.sh -b plasma -- \
+        -a "$APK_ARCH" "$@" || die "failed to build live-plasma"
+    touch_stamp live-plasma
+fi
+
 # bootstrap and full rootfses for every target
 
 make_rootfs() {
