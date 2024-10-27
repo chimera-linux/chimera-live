@@ -172,6 +172,8 @@ run_apk "${ROOT_DIR}" add ${PKG_BASE} ${PACKAGES} \
 
 msg "Cleaning up..."
 
+run_apk "${ROOT_DIR}" del chimerautils
+
 cleanup_dirs() {
     for x in "$@"; do
         rm -rf "${ROOT_DIR}/${x}"

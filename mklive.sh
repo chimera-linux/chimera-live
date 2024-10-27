@@ -13,8 +13,7 @@
 
 . ./lib.sh
 
-readonly PKG_BOOT="openresolv device-mapper xz"
-readonly PKG_ROOT="base-full xorriso mtools"
+PACKAGES="base-full"
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
@@ -33,7 +32,7 @@ Options:
  -f FLAVOR    Flavor name to include in default iso name
  -r REPO      Path to apk repository.
  -k DIR       Path to apk repository public key directory.
- -p PACKAGES  List of additional packages to install.
+ -p PACKAGES  List of packages to install (default: base-full).
  -s FSTYPE    Filesystem to use (squashfs or erofs, default: erofs)
  -h           Print this message.
 EOF
@@ -84,14 +83,6 @@ case "$FSTYPE" in
 esac
 
 shift $((OPTIND - 1))
-
-case "$APK_ARCH" in
-    x86_64) PKG_GRUB="grub-i386-pc grub-i386-efi grub-x86_64-efi";;
-    aarch64) PKG_GRUB="grub-arm64-efi";;
-    riscv64) PKG_GRUB="grub-riscv64-efi";;
-    ppc64|ppc64le) PKG_GRUB="grub-powerpc-ieee1275";;
-    *) die "unsupported architecture: ${APK_ARCH}";;
-esac
 
 ISO_VERSION=$(date '+%Y%m%d')
 
@@ -167,8 +158,11 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add ${PKG_BOOT} ${PKG_GRUB} ${PKG_ROOT} ${PACKAGES} \
+run_apk "${ROOT_DIR}" add base-live ${PACKAGES} \
     || die "failed to install full rootfs"
+
+msg "Cleaning world..."
+run_apk "${ROOT_DIR}" del chimerautils
 
 # determine kernel version
 if [ -z "$KERNVER" ]; then
@@ -241,9 +235,6 @@ done
 
 # clean up target root
 msg "Cleaning up target root..."
-
-run_apk "${ROOT_DIR}" del ${PKG_BOOT} \
-    || die "failed to remove leftover packages"
 
 cleanup_initramfs
 

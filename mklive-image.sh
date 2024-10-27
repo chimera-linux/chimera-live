@@ -25,10 +25,10 @@ done
 shift $((OPTIND - 1))
 
 if [ -z "$KERNEL_PKGS" ]; then
-    KERNEL_PKGS="linux-stable linux-stable-zfs-bin zfs"
+    KERNEL_PKGS="linux-stable linux-stable-zfs-bin"
 fi
 
-readonly BASE_PKGS="cryptsetup-scripts lvm2 firmware-linux-soc ${KERNEL_PKGS} ${EXTRA_PKGS}"
+readonly BASE_PKGS="base-full ${KERNEL_PKGS} ${EXTRA_PKGS}"
 
 case "$IMAGE" in
     base)
