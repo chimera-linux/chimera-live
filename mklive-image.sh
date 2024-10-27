@@ -43,7 +43,7 @@ case "$IMAGE" in
     *)
         echo "unknown image type: $IMAGE"
         echo
-        echo "supported image types: base gnome"
+        echo "supported image types: base gnome plasma"
         exit 1
         ;;
 esac
