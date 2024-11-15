@@ -41,6 +41,7 @@ EOF
 
 APK_BIN="apk"
 FSTYPE="erofs"
+[ -z "$MKLIVE_BOOTLOADER" ] && MKLIVE_BOOTLOADER="grub"
 
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
@@ -80,6 +81,13 @@ case "$FSTYPE" in
         fi
         ;;
     *) die "unknown live filesystem (${FSTYPE})" ;;
+esac
+
+case "$MKLIVE_BOOTLOADER" in
+    limine)
+        # for now
+        PACKAGES="$PACKAGES limine"
+        ;;
 esac
 
 shift $((OPTIND - 1))
@@ -130,12 +138,11 @@ BUILD_DIR=$(realpath "$BUILD_DIR")
 
 IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"
-BOOT_DIR="${IMAGE_DIR}/boot"
 LIVE_DIR="${IMAGE_DIR}/live"
 
 WRKSRC=$(pwd)
 
-mkdir -p "${BOOT_DIR}" "${LIVE_DIR}" "${ROOT_DIR}" \
+mkdir -p "${LIVE_DIR}" "${ROOT_DIR}" \
     || die "failed to create directories"
 
 # copy keys
@@ -295,29 +302,83 @@ msg "Generating ISO image..."
 
 mount_pseudo
 
-generate_grub_menu() {
+generate_menu() {
     sed \
      -e "s|@@BOOT_TITLE@@|Chimera Linux|g" \
      -e "s|@@KERNFILE@@|${KERNFILE}|g" \
      -e "s|@@KERNVER@@|${KERNVER}|g" \
      -e "s|@@ARCH@@|${APK_ARCH}|g" \
      -e "s|@@BOOT_CMDLINE@@||g" \
-     grub/menu${1}.cfg.in
+     "$1"
 }
 
-mkdir -p "${BOOT_DIR}/grub"
+generate_iso_grub() {
+    chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
+        --product-name "Chimera Linux" \
+        --product-version "${ISO_VERSION}" \
+        /mnt/image \
+        -volid "CHIMERA_LIVE"
+}
 
-generate_grub_menu > "${BOOT_DIR}/grub/grub.cfg"
+generate_isohybrid_limine() {
+    chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
+        -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
+        -relaxed-filenames -allow-lowercase -volid CHIMERA_LIVE \
+        -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
+        -boot-info-table -eltorito-alt-boot -e limine-uefi-cd.bin \
+        -efi-boot-part --efi-boot-image --protective-msdos-label \
+        -o /mnt/image.iso /mnt/image
+}
 
-mount --bind "${IMAGE_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
+generate_efi_limine() {
+    chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
+        -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
+        -relaxed-filenames -allow-lowercase -volid CHIMERA_LIVE \
+        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
+        -no-emul-boot -boot-load-size 4 -boot-info-table \
+        -o /mnt/image.iso /mnt/image
+}
 
-chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o - \
-    --product-name "Chimera Linux" \
-    --product-version "${ISO_VERSION}" \
-    /mnt \
-    -volid "CHIMERA_LIVE" > "${OUT_FILE}" || die "failed to generate ISO image"
+mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
+
+case "$MKLIVE_BOOTLOADER" in
+    limine)
+        generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
+        # efi executables
+        mkdir -p "${IMAGE_DIR}/EFI/BOOT"
+        cp "${ROOT_DIR}/usr/share/limine/"BOOT*.EFI "${IMAGE_DIR}/EFI/BOOT"
+        # always want this one
+        cp "${ROOT_DIR}/usr/share/limine/limine-uefi-cd.bin" "${IMAGE_DIR}"
+
+        case "$APK_ARCH" in
+            x86_64)
+                # necessary extra files for bios
+                cp "${ROOT_DIR}/usr/share/limine/limine-bios-cd.bin" "${IMAGE_DIR}"
+                cp "${ROOT_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
+                # generate image
+                generate_isohybrid_limine || die "failed to generate ISO image"
+                # and install bios
+                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
+                ;;
+            aarch64|riscv64)
+                generate_efi_limine || die "failed to generate ISO image"
+                ;;
+            *) die "Unknown architecture $APK_ARCH for limine" ;;
+        esac
+        ;;
+    grub)
+        mkdir -p "${IMAGE_DIR}/boot/grub"
+        generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/grub/grub.cfg"
+        generate_iso_grub || die "failed to generate ISO image"
+        ;;
+    *)
+        die "Unknown bootloader $MKLIVE_BOOTLOADER"
+        ;;
+esac
 
 umount -f "${ROOT_DIR}/mnt"
 umount_pseudo
+
+mv "${BUILD_DIR}/image.iso" "$OUT_FILE"
 
 msg "Successfully generated image (${OUT_FILE})"
