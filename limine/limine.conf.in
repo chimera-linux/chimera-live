@@ -1,0 +1,14 @@
+timeout: 10
+serial: yes
+
+/@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)
+protocol: linux
+kernel_path: boot():/live/@@KERNFILE@@
+module_path: boot():/live/initrd
+cmdline: boot=live init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+
+/@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (RAM)
+protocol: linux
+kernel_path: boot():/live/@@KERNFILE@@
+module_path: boot():/live/initrd
+cmdline: boot=live toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
