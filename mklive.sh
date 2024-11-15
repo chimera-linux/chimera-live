@@ -315,6 +315,7 @@ chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o - \
     --product-name "Chimera Linux" \
     --product-version "${ISO_VERSION}" \
     /mnt \
+    --mbr-force-bootable \
     -volid "CHIMERA_LIVE" > "${OUT_FILE}" || die "failed to generate ISO image"
 
 umount -f "${ROOT_DIR}/mnt"
