@@ -5,7 +5,7 @@
 <boot-script>
 " screen" output
 load-base release-load-area
-boot &device;:\boot\grub.img
+boot &device;:\boot\yaboot
 </boot-script>
 <OS-BADGE-ICONS>
 1010

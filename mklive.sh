@@ -88,6 +88,10 @@ case "$MKLIVE_BOOTLOADER" in
         # for now
         PACKAGES="$PACKAGES limine"
         ;;
+    nyaboot)
+        # for now
+        PACKAGES="$PACKAGES nyaboot"
+        ;;
 esac
 
 shift $((OPTIND - 1))
@@ -320,23 +324,30 @@ generate_iso_grub() {
         -volid "CHIMERA_LIVE"
 }
 
-generate_isohybrid_limine() {
+generate_iso_base() {
     chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
         -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
         -relaxed-filenames -allow-lowercase -volid CHIMERA_LIVE \
+        "$@" -o /mnt/image.iso /mnt/image
+}
+
+generate_isohybrid_limine() {
+    generate_iso_base \
         -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
         -boot-info-table -eltorito-alt-boot -e limine-uefi-cd.bin \
-        -efi-boot-part --efi-boot-image --protective-msdos-label \
-        -o /mnt/image.iso /mnt/image
+        -efi-boot-part --efi-boot-image --protective-msdos-label
 }
 
 generate_efi_limine() {
-    chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
-        -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
-        -relaxed-filenames -allow-lowercase -volid CHIMERA_LIVE \
+    generate_iso_base \
         -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
-        -no-emul-boot -boot-load-size 4 -boot-info-table \
-        -o /mnt/image.iso /mnt/image
+        -no-emul-boot -boot-load-size 4 -boot-info-table
+}
+
+generate_ppc_nyaboot() {
+    generate_iso_base \
+        -hfsplus -isohybrid-apm-hfsplus -hfsplus-file-creator-type chrp \
+        tbxi boot/ofboot.b -hfs-bless-by p boot -sysid PPC -chrp-boot-part
 }
 
 mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
@@ -365,6 +376,24 @@ case "$MKLIVE_BOOTLOADER" in
                 ;;
             *) die "Unknown architecture $APK_ARCH for limine" ;;
         esac
+        ;;
+    nyaboot)
+        case "$APK_ARCH" in
+            ppc*) ;;
+            *) die "Unknown architecture $APK_ARCH for nyaboot" ;;
+        esac
+        # necessary dirs
+        mkdir -p "${IMAGE_DIR}/boot"
+        mkdir -p "${IMAGE_DIR}/etc"
+        mkdir -p "${IMAGE_DIR}/ppc/chrp"
+        # generate menu
+        generate_menu yaboot/yaboot.conf.in > "${IMAGE_DIR}/etc/yaboot.conf"
+        generate_menu yaboot/yaboot.msg.in > "${IMAGE_DIR}/etc/yaboot.msg"
+        # needs to be present in both locations
+        cat yaboot/ofboot.b > "${IMAGE_DIR}/boot/ofboot.b"
+        cat yaboot/ofboot.b > "${IMAGE_DIR}/ppc/bootinfo.txt"
+        # now install the yaboot binary
+        cp "${ROOT_DIR}/usr/lib/nyaboot.bin" "${IMAGE_DIR}/boot/yaboot"
         ;;
     grub)
         mkdir -p "${IMAGE_DIR}/boot/grub"

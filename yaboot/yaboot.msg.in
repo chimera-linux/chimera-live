@@ -1,0 +1,11 @@
+Welcome to Chimera Linux.
+
+The following labels are defined:
+
+live       @@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)
+liveram    @@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (RAM)
+
+Type one of them to boot it. Additional arguments to the label
+go on the kernel's command line, so you can use them for overrides.
+
+Press TAB for a full list of labels. Enter 'help' for more detailed usage.
