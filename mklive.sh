@@ -320,6 +320,7 @@ generate_iso_grub() {
     chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
         --product-name "Chimera Linux" \
         --product-version "${ISO_VERSION}" \
+        --mbr-force-bootable -partition_offset 16 \
         /mnt/image \
         -volid "CHIMERA_LIVE"
 }
