@@ -340,7 +340,8 @@ generate_isohybrid_limine() {
     generate_iso_base \
         -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
         -boot-info-table -hfsplus -apm-block-size 2048 -eltorito-alt-boot \
-        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label
+        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
+        --protective-msdos-label --mbr-force-bootable -partition_offset 16
 }
 
 # just plain uefi support with nothing else, for non-x86 machines where there
@@ -403,8 +404,9 @@ case "$MKLIVE_BOOTLOADER" in
                 cp "${ROOT_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
                 # generate image
                 generate_isohybrid_limine || die "failed to generate ISO image"
-                # and install bios
-                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
+                # and install bios, into gpt partition 1 to force it "early"
+                # (gpt embedding will put the second half of stage2 very late)
+                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso" 1
                 ;;
             aarch64|riscv64)
                 generate_efi_limine || die "failed to generate ISO image"
