@@ -316,6 +316,7 @@ generate_menu() {
      "$1"
 }
 
+# grub support, mkrescue chooses what to do automatically
 generate_iso_grub() {
     chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
         --product-name "Chimera Linux" \
@@ -325,6 +326,7 @@ generate_iso_grub() {
         -volid "CHIMERA_LIVE"
 }
 
+# base args that will be present for any iso generation
 generate_iso_base() {
     chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
         -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
@@ -332,19 +334,25 @@ generate_iso_base() {
         "$@" -o /mnt/image.iso /mnt/image
 }
 
+# maximally compatible setup for x86_64, one that can boot on bios machines
+# as well as both mac efi and pc uefi, and from optical media as well as disk
 generate_isohybrid_limine() {
     generate_iso_base \
         -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
-        -boot-info-table -eltorito-alt-boot -e limine-uefi-cd.bin \
-        -efi-boot-part --efi-boot-image --protective-msdos-label
+        -boot-info-table -hfsplus -apm-block-size 2048 -eltorito-alt-boot \
+        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label
 }
 
+# just plain uefi support with nothing else, for non-x86 machines where there
+# is no legacy to worry about, should still support optical media + disk
 generate_efi_limine() {
     generate_iso_base \
         -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
         -no-emul-boot -boot-load-size 4 -boot-info-table
 }
 
+# ppc only, nyaboot + apm hybrid for legacy machines (mac, slof), modern
+# machines do not care as long as it's mountable (and need no bootloader)
 generate_ppc_nyaboot() {
     generate_iso_base \
         -hfsplus -isohybrid-apm-hfsplus -hfsplus-file-creator-type chrp \
@@ -356,15 +364,41 @@ mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
 case "$MKLIVE_BOOTLOADER" in
     limine)
         generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
-        # efi executables
+        # efi executables for usb/disk boot
         mkdir -p "${IMAGE_DIR}/EFI/BOOT"
-        cp "${ROOT_DIR}/usr/share/limine/"BOOT*.EFI "${IMAGE_DIR}/EFI/BOOT"
-        # always want this one
-        cp "${ROOT_DIR}/usr/share/limine/limine-uefi-cd.bin" "${IMAGE_DIR}"
-
         case "$APK_ARCH" in
             x86_64)
-                # necessary extra files for bios
+                cp "${ROOT_DIR}/usr/share/limine/BOOTIA32.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${ROOT_DIR}/usr/share/limine/BOOTX64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                ;;
+            aarch64)
+                cp "${ROOT_DIR}/usr/share/limine/BOOTAA64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                ;;
+            riscv64)
+                cp "${ROOT_DIR}/usr/share/limine/BOOTRISCV64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                ;;
+            loongarch64)
+                cp "${ROOT_DIR}/usr/share/limine/BOOTLOONGARCH64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                ;;
+            *)
+                die "Unknown architecture $APK_ARCH for EFI"
+                ;;
+        esac
+        # make an efi image for eltorito (optical media boot)
+        truncate -s 2949120 "${IMAGE_DIR}/limine-uefi-cd.bin" || die "failed to create EFI image"
+        chroot "${ROOT_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/limine-uefi-cd.bin" > /dev/null \
+            || die "failed to format EFI image"
+        LC_CTYPE=C chroot "${ROOT_DIR}" /usr/bin/mmd -i "/mnt/image/limine-uefi-cd.bin" EFI EFI/BOOT \
+            || die "failed to populate EFI image"
+        for img in "${IMAGE_DIR}/EFI/BOOT"/*; do
+            img=${img##*/}
+            LC_CTYPE=C chroot "${ROOT_DIR}" /usr/bin/mcopy -i "/mnt/image/limine-uefi-cd.bin" \
+                "/mnt/image/EFI/BOOT/$img" "::EFI/BOOT/" || die "failed to populate EFI image"
+        done
+        # now generate
+        case "$APK_ARCH" in
+            x86_64)
+                # but first, necessary extra files for bios
                 cp "${ROOT_DIR}/usr/share/limine/limine-bios-cd.bin" "${IMAGE_DIR}"
                 cp "${ROOT_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
                 # generate image
