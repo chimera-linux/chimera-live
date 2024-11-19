@@ -206,7 +206,12 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
 
 umount_pseudo
 
+_tarargs=
+if [ -n "$(tar --version | grep GNU)" ]; then
+    _tarargs="--xattrs-include='*'"
+fi
+
 msg "Generating root filesystem tarball..."
-tar -C "${TAR_DIR}" -cvpzf "${OUT_FILE}" . || die "tar failed"
+tar -C "${TAR_DIR}" -cvpzf "${OUT_FILE}" --xattrs $_tarargs . || die "tar failed"
 
 msg "Successfully generated tarball (${OUT_FILE})"
