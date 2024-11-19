@@ -404,9 +404,8 @@ case "$MKLIVE_BOOTLOADER" in
                 cp "${ROOT_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
                 # generate image
                 generate_isohybrid_limine || die "failed to generate ISO image"
-                # and install bios, into gpt partition 1 to force it "early"
-                # (gpt embedding will put the second half of stage2 very late)
-                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso" 1
+                # and install bios
+                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
                 ;;
             aarch64|riscv64)
                 generate_efi_limine || die "failed to generate ISO image"
