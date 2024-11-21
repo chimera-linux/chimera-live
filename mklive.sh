@@ -433,7 +433,7 @@ case "$MKLIVE_BOOTLOADER" in
         ;;
     grub)
         mkdir -p "${IMAGE_DIR}/boot/grub"
-        generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/grub/grub.cfg"
+        generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/boot/grub/grub.cfg"
         generate_iso_grub || die "failed to generate ISO image"
         ;;
     *)
