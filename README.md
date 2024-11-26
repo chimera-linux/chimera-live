@@ -1,8 +1,12 @@
 # chimera-live
 
 This repository contains tooling to manage creation of Chimera images.
+They are mainly intended for handling of distro releases, but can be
+used by advanced users to create their own images. They are also useful
+for creating images for specific devices that are supported but not
+shipped with pre-generated releases.
 
-This consists of the following scripts right now:
+The following low level scripts are provided:
 
 * `mklive.sh` - the live ISO image creator for BIOS, EFI and POWER/PowerPC systems
 * `mkrootfs.sh` - root filesystem tarball creator
@@ -10,7 +14,10 @@ This consists of the following scripts right now:
 * `unrootfs.sh` - rootfs tarball extractor
 * `mkimage.sh` - device image creator
 
-And the following auxiliary scripts:
+Low level scripts are mostly not intended for direct usage (except for device
+images), and anyone using them is expected to be familiar with the details.
+
+The following high level scripts are available:
 
 * `mklive-image.sh` - wrapper around `mklive.sh` to create standardized images
 * `mkrootfs-platform.sh` - wrapper around `mkrootfs.sh` to create standardized
