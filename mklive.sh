@@ -193,15 +193,19 @@ for f in "${ROOT_DIR}/boot/"vmlinu[xz]-*; do
 done
 
 if [ -z "$KERNVER" ]; then
-    die "unable to determine kernel version"
+    die "live media require a kernel, but none detected"
 fi
 
 if [ -z "$KERNFILE" ]; then
-    die "unable to determine kernel file name"
+    die "no kernel found matching '${KERNVER}'"
 fi
 
 # add live-boot initramfs stuff
 msg "Copying live initramfs scripts..."
+
+if [ ! -x "${ROOT_DIR}/usr/bin/mkinitramfs" ]; then
+    die "live media require initramfs-tools, but target root does not contain it"
+fi
 
 copy_initramfs() {
     cp -R initramfs-tools/lib/live "${ROOT_DIR}/usr/lib" || return 1
