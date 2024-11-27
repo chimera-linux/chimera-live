@@ -325,7 +325,7 @@ generate_iso_grub() {
     chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
         --product-name "Chimera Linux" \
         --product-version "${ISO_VERSION}" \
-        --mbr-force-bootable -partition_offset 16 \
+        --mbr-force-bootable \
         /mnt/image \
         -volid "CHIMERA_LIVE"
 }
@@ -345,7 +345,7 @@ generate_isohybrid_limine() {
         -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
         -boot-info-table -hfsplus -apm-block-size 2048 -eltorito-alt-boot \
         -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
-        --protective-msdos-label --mbr-force-bootable -partition_offset 16
+        --protective-msdos-label --mbr-force-bootable
 }
 
 # just plain uefi support with nothing else, for non-x86 machines where there
