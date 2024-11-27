@@ -171,6 +171,11 @@ check_dev ()
 		fi
 	fi
 
+	# allow cases like live-media=LABEL
+	if [ ! -e "${devname}" -a -e "/dev/disk/by-label/${devname}" ]; then
+		devname="/dev/disk/by-label/${devname}"
+	fi
+
 	IFS=","
 	for device in ${devname}
 	do

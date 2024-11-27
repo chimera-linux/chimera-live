@@ -14,11 +14,11 @@ if loadfont unicode; then
 fi
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@)" --id chimera-live {
-    linux /live/@@KERNFILE@@ boot=live init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live live-media=CHIMERA_LIVE init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }
 
 menuentry "@@BOOT_TITLE@@ @@KERNVER@@ (@@ARCH@@) (RAM)" --id chimera-live-ram {
-    linux /live/@@KERNFILE@@ boot=live toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
+    linux /live/@@KERNFILE@@ boot=live live-media=CHIMERA_LIVE toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@
     initrd /live/initrd
 }

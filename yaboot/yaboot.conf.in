@@ -4,9 +4,9 @@ message=/etc/yaboot.msg
 image=/live/vmlinux
 	label=live
 	initrd=/live/initrd
-	append="boot=live init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@"
+	append="boot=live live-media=CHIMERA_LIVE init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@"
 
 image=/live/vmlinux
 	label=liveram
 	initrd=/live/initrd
-	append="boot=live toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@"
+	append="boot=live live-media=CHIMERA_LIVE toram init=/usr/bin/init loglevel=4 @@BOOT_CMDLINE@@"
