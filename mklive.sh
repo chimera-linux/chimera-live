@@ -13,7 +13,7 @@
 
 . ./lib.sh
 
-PACKAGES="base-full linux-stable"
+PACKAGES="base-full base-live linux-stable"
 HOST_PACKAGES="xorriso mtools dosfstools"
 TARGET_PACKAGES=
 
@@ -186,7 +186,7 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add base-live ${PACKAGES} ${TARGET_PACKAGES} \
+run_apk "${ROOT_DIR}" add ${PACKAGES} ${TARGET_PACKAGES} \
     || die "failed to install full rootfs"
 
 # determine kernel version

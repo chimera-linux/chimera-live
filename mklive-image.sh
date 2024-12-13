@@ -25,12 +25,18 @@ done
 shift $((OPTIND - 1))
 
 if [ -z "$KERNEL_PKGS" ]; then
-    KERNEL_PKGS="linux-stable linux-stable-zfs-bin"
+    KERNEL_PKGS="linux-stable"
+    if [ "$IMAGE" != "minimal" ]; then
+        KERNEL_PKGS="$KERNEL_PKGS linux-stable-zfs-bin"
+    fi
 fi
 
-readonly BASE_PKGS="base-full ${KERNEL_PKGS} ${EXTRA_PKGS}"
+readonly BASE_PKGS="base-full base-live ${KERNEL_PKGS} ${EXTRA_PKGS}"
 
 case "$IMAGE" in
+    minimal)
+        PKGS="base-minimal base-full-kernel ${KERNEL_PKGS} ${EXTRA_PKGS}"
+        ;;
     base)
         PKGS="${BASE_PKGS}"
         ;;
