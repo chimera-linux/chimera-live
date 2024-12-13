@@ -15,6 +15,7 @@
 
 PACKAGES="base-full linux-stable"
 HOST_PACKAGES="xorriso mtools dosfstools"
+TARGET_PACKAGES=
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
@@ -83,6 +84,15 @@ esac
 case "$MKLIVE_BOOTLOADER" in
     limine) HOST_PACKAGES="$HOST_PACKAGES limine" ;;
     nyaboot) HOST_PACKAGES="$HOST_PACKAGES nyaboot" ;;
+    grub)
+        HOST_PACKAGES="$HOST_PACKAGES grub"
+        case "$APK_ARCH" in
+            aarch64) TARGET_PACKAGES="$TARGET_PACKAGES grub-arm64-efi" ;;
+            ppc*) TARGET_PACKAGES="$TARGET_PACKAGES grub-powerpc-ieee1275" ;;
+            riscv64) TARGET_PACKAGES="$TARGET_PACKAGES grub-riscv64-efi" ;;
+            x86_64) TARGET_PACKAGES="$TARGET_PACKAGES grub-i386-efi grub-i386-pc grub-x86_64-efi" ;;
+            *) die "unknown GRUB target for $APK_ARCH" ;;
+        esac
 esac
 
 shift $((OPTIND - 1))
@@ -176,11 +186,8 @@ msg "Mounting pseudo-filesystems..."
 mount_pseudo
 
 msg "Installing target packages..."
-run_apk "${ROOT_DIR}" add base-live ${PACKAGES} \
+run_apk "${ROOT_DIR}" add base-live ${PACKAGES} ${TARGET_PACKAGES} \
     || die "failed to install full rootfs"
-
-msg "Cleaning world..."
-run_apk "${ROOT_DIR}" del chimerautils
 
 # determine kernel version
 if [ -z "$KERNVER" ]; then
@@ -206,6 +213,10 @@ fi
 if [ -z "$KERNFILE" ]; then
     die "no kernel found matching '${KERNVER}'"
 fi
+
+# copy target-specific grub files
+rm -rf "${HOST_DIR}/usr/lib/grub"
+cp -a "${ROOT_DIR}/usr/lib/grub" "${HOST_DIR}/usr/lib"
 
 # add live-boot initramfs stuff
 msg "Copying live initramfs scripts..."
@@ -257,6 +268,8 @@ done
 
 # clean up target root
 msg "Cleaning up target root..."
+
+run_apk "${ROOT_DIR}" del chimerautils ${TARGET_PACKAGES}
 
 cleanup_initramfs
 
@@ -327,17 +340,13 @@ generate_menu() {
 
 # grub support, mkrescue chooses what to do automatically
 generate_iso_grub() {
-    # we need target root access for grub
-    mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
     # because host grub would not have all the targets
-    chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
+    chroot "${HOST_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
         --product-name "Chimera Linux" \
         --product-version "${ISO_VERSION}" \
         --mbr-force-bootable \
         /mnt/image \
         -volid "CHIMERA_LIVE"
-    # umount that...
-    umount -f "${ROOT_DIR}/mnt"
 }
 
 # base args that will be present for any iso generation
