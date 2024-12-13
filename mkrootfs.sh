@@ -45,7 +45,11 @@ if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
 fi
 
-if ! command -v tar > /dev/null 2>&1; then
+TAR=tar
+
+if command -v bsdtar > /dev/null 2>&1; then
+    TAR=bsdtar
+elif if ! command -v tar > /dev/null 2>&1; then
     die "tar needs to be installed"
 fi
 
@@ -134,7 +138,7 @@ if [ -n "$BASE_TAR" ]; then
     mkdir -p "${ROOT_DIR}" || die "failed to create merged"
 
     # unpack the base tarball into lower
-    tar -pxf "$BASE_TAR" -C "${ROOT_LOWER}" || die "failed to unpack base tar"
+    "$TAR" -pxf "$BASE_TAR" -C "${ROOT_LOWER}" || die "failed to unpack base tar"
 
     # mount the overlay
     mount -t overlay overlay -o \
@@ -207,11 +211,11 @@ rm -f "${ROOT_DIR}/etc/shadow-" "${ROOT_DIR}/etc/gshadow-" \
 umount_pseudo
 
 _tarargs=
-if [ -n "$(tar --version | grep GNU)" ]; then
+if [ -n "$($TAR --version | grep GNU)" ]; then
     _tarargs="--xattrs-include='*'"
 fi
 
 msg "Generating root filesystem tarball..."
-tar -C "${TAR_DIR}" -cvpzf "${OUT_FILE}" --xattrs $_tarargs . || die "tar failed"
+"$TAR" -C "${TAR_DIR}" -cvpzf "${OUT_FILE}" --xattrs $_tarargs . || die "tar failed"
 
 msg "Successfully generated tarball (${OUT_FILE})"

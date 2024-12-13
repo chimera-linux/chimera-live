@@ -40,6 +40,14 @@ EOF
     exit ${1:=1}
 }
 
+TAR=tar
+
+if command -v bsdtar > /dev/null 2>&1; then
+    TAR=bsdtar
+elif if ! command -v tar > /dev/null 2>&1; then
+    die "tar needs to be installed"
+fi
+
 IN_FILES="$1"
 shift
 
@@ -78,14 +86,14 @@ ROOT_FSTYPE=$(findmnt -no fstype "${ROOT_DIR}")
 msg "Unpacking rootfs tarball..."
 
 _tarargs=
-if [ -n "$(tar --version | grep GNU)" ]; then
+if [ -n "$($TAR --version | grep GNU)" ]; then
     _tarargs="--xattrs-include='*'"
 fi
 
 OLD_IFS=$IFS
 IFS=;
 for tfile in $IN_FILES; do
-    tar -pxf "$tfile" --xattrs $_tarargs -C "$ROOT_DIR" ||\
+    "$TAR" -pxf "$tfile" --xattrs $_tarargs -C "$ROOT_DIR" ||\
          die "could not extract input file: $file"
 done
 IFS=$OLD_IFS
