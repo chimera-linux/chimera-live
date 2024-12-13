@@ -17,15 +17,26 @@ mount_pseudo() {
     mount -t sysfs none "${ROOT_DIR}/sys" || die "failed to mount sysfs"
 }
 
+mount_pseudo_host() {
+    mount -t devtmpfs none "${HOST_DIR}/dev" || die "failed to mount devfs"
+    mount -t proc none "${HOST_DIR}/proc" || die "failed to mount procfs"
+    mount -t sysfs none "${HOST_DIR}/sys" || die "failed to mount sysfs"
+}
+
+umount_pseudo_dir() {
+    [ -n "$1" -a -d "$1" ] || return 0
+    umount -f "${1}/dev" > /dev/null 2>&1
+    umount -f "${1}/proc" > /dev/null 2>&1
+    umount -f "${1}/sys" > /dev/null 2>&1
+    umount -f "${1}/mnt" > /dev/null 2>&1
+    mountpoint -q "${1}" > /dev/null 2>&1 && \
+        umount -f "${1}" > /dev/null 2>&1
+}
+
 umount_pseudo() {
-    [ -z "$ROOT_DIR" ] && return 0
     sync
-    umount -f "${ROOT_DIR}/dev" > /dev/null 2>&1
-    umount -f "${ROOT_DIR}/proc" > /dev/null 2>&1
-    umount -f "${ROOT_DIR}/sys" > /dev/null 2>&1
-    umount -f "${ROOT_DIR}/mnt" > /dev/null 2>&1
-    mountpoint -q "${ROOT_DIR}" > /dev/null 2>&1 && \
-        umount -f "${ROOT_DIR}" > /dev/null 2>&1
+    umount_pseudo_dir "$HOST_DIR"
+    umount_pseudo_dir "$ROOT_DIR"
 }
 
 error_sig() {

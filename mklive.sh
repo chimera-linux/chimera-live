@@ -14,6 +14,7 @@
 . ./lib.sh
 
 PACKAGES="base-full linux-stable"
+HOST_PACKAGES="xorriso mtools dosfstools"
 
 if [ -n "$MKLIVE_BUILD_DIR" ]; then
     BUILD_DIR="$MKLIVE_BUILD_DIR"
@@ -49,8 +50,12 @@ fi
 
 APK_ARCH=$(${APK_BIN} --print-arch)
 
+run_host_apk() {
+    "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive
+}
+
 run_apk() {
-    "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@" --no-interactive
+    run_host_apk "$@" --arch ${APK_ARCH}
 }
 
 while getopts "a:f:k:o:p:r:s:h" opt; do
@@ -70,28 +75,14 @@ while getopts "a:f:k:o:p:r:s:h" opt; do
 done
 
 case "$FSTYPE" in
-    squashfs)
-        if ! command -v gensquashfs > /dev/null 2>&1; then
-            die "gensquashfs needs to be installed (squashfs-tools-ng)"
-        fi
-        ;;
-    erofs)
-        if ! command -v mkfs.erofs > /dev/null 2>&1; then
-            die "mkfs.erofs needs to be installed (erofs-utils)"
-        fi
-        ;;
+    squashfs) HOST_PACKAGES="$HOST_PACKAGES squashfs-tools-ng" ;;
+    erofs) HOST_PACKAGES="$HOST_PACKAGES erofs-utils" ;;
     *) die "unknown live filesystem (${FSTYPE})" ;;
 esac
 
 case "$MKLIVE_BOOTLOADER" in
-    limine)
-        # for now
-        PACKAGES="$PACKAGES limine"
-        ;;
-    nyaboot)
-        # for now
-        PACKAGES="$PACKAGES nyaboot"
-        ;;
+    limine) HOST_PACKAGES="$HOST_PACKAGES limine" ;;
+    nyaboot) HOST_PACKAGES="$HOST_PACKAGES nyaboot" ;;
 esac
 
 shift $((OPTIND - 1))
@@ -142,21 +133,37 @@ BUILD_DIR=$(realpath "$BUILD_DIR")
 
 IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"
+HOST_DIR="${BUILD_DIR}/host"
 LIVE_DIR="${IMAGE_DIR}/live"
 
 WRKSRC=$(pwd)
 
-mkdir -p "${LIVE_DIR}" "${ROOT_DIR}" \
+mkdir -p "${LIVE_DIR}" "${ROOT_DIR}" "${HOST_DIR}" \
     || die "failed to create directories"
 
 # copy keys
 msg "Copying signing keys..."
 
 mkdir -p "${ROOT_DIR}/etc/apk/keys" || die "failed to create keys directory"
+mkdir -p "${HOST_DIR}/etc/apk/keys" || die "failed to create host keys directory"
 for k in "${APK_KEYDIR}"/*.pub; do
     [ -r "$k" ] || continue
     cp "$k" "${ROOT_DIR}/etc/apk/keys" || die "failed to copy key '$k'"
+    cp "$k" "${HOST_DIR}/etc/apk/keys" || die "failed to copy host key '$k'"
 done
+
+# install host setup
+msg "Installing host base packages..."
+
+run_host_apk "${HOST_DIR}" --initdb add chimerautils \
+    || die "failed to install host chimerautils"
+
+msg "Mounting host pseudo-filesystems..."
+mount_pseudo_host
+
+msg "Installing host packages..."
+run_host_apk "${HOST_DIR}" add ${HOST_PACKAGES} \
+    || die "failed to install host packages"
 
 # install target packages
 msg "Installing target base packages..."
@@ -289,26 +296,24 @@ esac
 # generate filesystem
 msg "Generating root filesystem..."
 
-umount_pseudo
+mount --bind "${BUILD_DIR}" "${HOST_DIR}/mnt" || die "root bind mount failed"
 
 case "$FSTYPE" in
     squashfs)
-        gensquashfs --pack-dir "${ROOT_DIR}" -c xz -k -x \
-            "${LIVE_DIR}/filesystem.squashfs" || die "gensquashfs failed"
+        chroot "${HOST_DIR}" /usr/bin/gensquashfs --pack-dir /mnt/rootfs \
+            -c xz -k -x /mnt/image/live/filesystem.squashfs || die "gensquashfs failed"
         ;;
     erofs)
         # tried zstd, it's quite a bit bigger than xz... and experimental
         # when testing, level=3 is 1.9% bigger than 16 and 0.7% bigger than 9
         # ztailpacking has measurable space savings, fragments+dedupe does not
-        mkfs.erofs -z lzma -E ztailpacking "${LIVE_DIR}/filesystem.erofs" \
-            "${ROOT_DIR}" || die "mkfs.erofs failed"
+        chroot "${HOST_DIR}" /usr/bin/mkfs.erofs -z lzma -E ztailpacking \
+            /mnt/image/live/filesystem.erofs /mnt/rootfs || die "mkfs.erofs failed"
         ;;
 esac
 
 # generate iso image
 msg "Generating ISO image..."
-
-mount_pseudo
 
 generate_menu() {
     sed \
@@ -322,17 +327,22 @@ generate_menu() {
 
 # grub support, mkrescue chooses what to do automatically
 generate_iso_grub() {
+    # we need target root access for grub
+    mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
+    # because host grub would not have all the targets
     chroot "${ROOT_DIR}" /usr/bin/grub-mkrescue -o /mnt/image.iso \
         --product-name "Chimera Linux" \
         --product-version "${ISO_VERSION}" \
         --mbr-force-bootable \
         /mnt/image \
         -volid "CHIMERA_LIVE"
+    # umount that...
+    umount -f "${ROOT_DIR}/mnt"
 }
 
 # base args that will be present for any iso generation
 generate_iso_base() {
-    chroot "${ROOT_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
+    chroot "${HOST_DIR}" /usr/bin/xorriso -as mkisofs -iso-level 3 \
         -rock -joliet -max-iso9660-filenames -omit-period -omit-version-number \
         -relaxed-filenames -allow-lowercase -volid CHIMERA_LIVE \
         "$@" -o /mnt/image.iso /mnt/image
@@ -364,8 +374,6 @@ generate_ppc_nyaboot() {
         tbxi boot/ofboot.b -hfs-bless-by p boot -sysid PPC -chrp-boot-part
 }
 
-mount --bind "${BUILD_DIR}" "${ROOT_DIR}/mnt" || die "root bind mount failed"
-
 case "$MKLIVE_BOOTLOADER" in
     limine)
         generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
@@ -373,17 +381,17 @@ case "$MKLIVE_BOOTLOADER" in
         mkdir -p "${IMAGE_DIR}/EFI/BOOT"
         case "$APK_ARCH" in
             x86_64)
-                cp "${ROOT_DIR}/usr/share/limine/BOOTIA32.EFI" "${IMAGE_DIR}/EFI/BOOT"
-                cp "${ROOT_DIR}/usr/share/limine/BOOTX64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${HOST_DIR}/usr/share/limine/BOOTIA32.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${HOST_DIR}/usr/share/limine/BOOTX64.EFI" "${IMAGE_DIR}/EFI/BOOT"
                 ;;
             aarch64)
-                cp "${ROOT_DIR}/usr/share/limine/BOOTAA64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${HOST_DIR}/usr/share/limine/BOOTAA64.EFI" "${IMAGE_DIR}/EFI/BOOT"
                 ;;
             riscv64)
-                cp "${ROOT_DIR}/usr/share/limine/BOOTRISCV64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${HOST_DIR}/usr/share/limine/BOOTRISCV64.EFI" "${IMAGE_DIR}/EFI/BOOT"
                 ;;
             loongarch64)
-                cp "${ROOT_DIR}/usr/share/limine/BOOTLOONGARCH64.EFI" "${IMAGE_DIR}/EFI/BOOT"
+                cp "${HOST_DIR}/usr/share/limine/BOOTLOONGARCH64.EFI" "${IMAGE_DIR}/EFI/BOOT"
                 ;;
             *)
                 die "Unknown architecture $APK_ARCH for EFI"
@@ -391,25 +399,25 @@ case "$MKLIVE_BOOTLOADER" in
         esac
         # make an efi image for eltorito (optical media boot)
         truncate -s 2949120 "${IMAGE_DIR}/limine-uefi-cd.bin" || die "failed to create EFI image"
-        chroot "${ROOT_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/limine-uefi-cd.bin" > /dev/null \
+        chroot "${HOST_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/limine-uefi-cd.bin" > /dev/null \
             || die "failed to format EFI image"
-        LC_CTYPE=C chroot "${ROOT_DIR}" /usr/bin/mmd -i "/mnt/image/limine-uefi-cd.bin" EFI EFI/BOOT \
+        LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mmd -i "/mnt/image/limine-uefi-cd.bin" EFI EFI/BOOT \
             || die "failed to populate EFI image"
         for img in "${IMAGE_DIR}/EFI/BOOT"/*; do
             img=${img##*/}
-            LC_CTYPE=C chroot "${ROOT_DIR}" /usr/bin/mcopy -i "/mnt/image/limine-uefi-cd.bin" \
+            LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mcopy -i "/mnt/image/limine-uefi-cd.bin" \
                 "/mnt/image/EFI/BOOT/$img" "::EFI/BOOT/" || die "failed to populate EFI image"
         done
         # now generate
         case "$APK_ARCH" in
             x86_64)
                 # but first, necessary extra files for bios
-                cp "${ROOT_DIR}/usr/share/limine/limine-bios-cd.bin" "${IMAGE_DIR}"
-                cp "${ROOT_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
+                cp "${HOST_DIR}/usr/share/limine/limine-bios-cd.bin" "${IMAGE_DIR}"
+                cp "${HOST_DIR}/usr/share/limine/limine-bios.sys" "${IMAGE_DIR}"
                 # generate image
                 generate_isohybrid_limine || die "failed to generate ISO image"
                 # and install bios
-                chroot "${ROOT_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
+                chroot "${HOST_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
                 ;;
             aarch64|riscv64)
                 generate_efi_limine || die "failed to generate ISO image"
@@ -433,7 +441,7 @@ case "$MKLIVE_BOOTLOADER" in
         cat yaboot/ofboot.b > "${IMAGE_DIR}/boot/ofboot.b"
         cat yaboot/ofboot.b > "${IMAGE_DIR}/ppc/bootinfo.txt"
         # now install the yaboot binary
-        cp "${ROOT_DIR}/usr/lib/nyaboot.bin" "${IMAGE_DIR}/boot/yaboot"
+        cp "${HOST_DIR}/usr/lib/nyaboot.bin" "${IMAGE_DIR}/boot/yaboot"
         ;;
     grub)
         mkdir -p "${IMAGE_DIR}/boot/grub"
@@ -445,7 +453,6 @@ case "$MKLIVE_BOOTLOADER" in
         ;;
 esac
 
-umount -f "${ROOT_DIR}/mnt"
 umount_pseudo
 
 mv "${BUILD_DIR}/image.iso" "$OUT_FILE"
