@@ -44,7 +44,7 @@ TAR=tar
 
 if command -v bsdtar > /dev/null 2>&1; then
     TAR=bsdtar
-elif if ! command -v tar > /dev/null 2>&1; then
+elif ! command -v tar > /dev/null 2>&1; then
     die "tar needs to be installed"
 fi
 
