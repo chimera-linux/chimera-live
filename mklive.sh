@@ -320,7 +320,7 @@ case "$FSTYPE" in
         # tried zstd, it's quite a bit bigger than xz... and experimental
         # when testing, level=3 is 1.9% bigger than 16 and 0.7% bigger than 9
         # ztailpacking has measurable space savings, fragments+dedupe does not
-        chroot "${HOST_DIR}" /usr/bin/mkfs.erofs -z lzma -E ztailpacking \
+        chroot "${HOST_DIR}" /usr/bin/mkfs.erofs -b 4096 -z lzma -E ztailpacking \
             /mnt/image/live/filesystem.erofs /mnt/rootfs || die "mkfs.erofs failed"
         ;;
 esac
