@@ -164,8 +164,13 @@ msg "Creating and mounting partitions..."
 
 msg "Cleaning up..."
 
+if [ -d "${ROOT_DIR}/boot.mnt" ]; then
+    umount "${ROOT_DIR}/boot.mnt"
+    rmdir "${ROOT_DIR}/boot.mnt"
+fi
+
 umount -R "$ROOT_DIR" || die "failed to unmount image"
-rmdir "$ROOT_DIR" || die "root directory not emoty"
+rmdir "$ROOT_DIR" || die "root directory not empty"
 ROOT_DIR=
 
 losetup -d "$LOOP_DEV" || die "failed to detach loop device"

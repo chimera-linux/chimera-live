@@ -78,10 +78,18 @@ if [ -n "$BL_DEV" -a ! -b "$BL_DEV" ]; then
     die "$BL_DEV given but not a block device"
 fi
 
-BOOT_UUID=$(findmnt -no uuid "${ROOT_DIR}/boot")
+BOOT_UUID=$(findmnt -no uuid "${ROOT_DIR}/boot.mnt")
 ROOT_UUID=$(findmnt -no uuid "${ROOT_DIR}")
-BOOT_FSTYPE=$(findmnt -no fstype "${ROOT_DIR}/boot")
+BOOT_FSTYPE=$(findmnt -no fstype "${ROOT_DIR}/boot.mnt")
 ROOT_FSTYPE=$(findmnt -no fstype "${ROOT_DIR}")
+
+BOOT_MNT=
+if [ -n "$BOOT_UUID" ]; then
+    BOOT_MNT=1
+else
+    BOOT_UUID=$(findmnt -no uuid "${ROOT_DIR}/boot")
+    BOOT_FSTYPE=$(findmnt -no fstype "${ROOT_DIR}/boot")
+fi
 
 msg "Unpacking rootfs tarball..."
 
@@ -97,6 +105,10 @@ for tfile in $IN_FILES; do
          die "could not extract input file: $file"
 done
 IFS=$OLD_IFS
+
+if [ -n "$BOOT_MNT" ]; then
+    mv "${ROOT_DIR}/boot"/* "${ROOT_DIR}/boot.mnt"
+fi
 
 # use fsck for all file systems other than f2fs
 case "$ROOT_FSTYPE" in
