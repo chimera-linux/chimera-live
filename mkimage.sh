@@ -73,7 +73,7 @@ if ! command -v truncate > /dev/null 2>&1; then
     die "truncate is required"
 fi
 
-IMAGE_SIZE=2G
+IMAGE_SIZE=8G
 OUT_FILE=
 PLATFORM=
 LOOP_DEV=
