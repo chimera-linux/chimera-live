@@ -23,6 +23,12 @@ else
     BUILD_DIR="build"
 fi
 
+if [ -n "$MKLIVE_CACHE_DIR" ]; then
+    CACHE_DIR="$MKLIVE_CACHE_DIR"
+else
+    CACHE_DIR="apk-cache"
+fi
+
 usage() {
     cat <<EOF
 Usage: $PROGNAME [opts] [build_dir]
@@ -52,7 +58,8 @@ fi
 APK_ARCH=$(${APK_BIN} --print-arch)
 
 run_host_apk() {
-    "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive --arch ${APK_ARCH}
+    "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive --arch ${APK_ARCH} \
+        --cache-packages --cache-dir "${CACHE_DIR}/${APK_ARCH}"
 }
 
 run_apk() {
@@ -140,6 +147,11 @@ mkdir -p "$BUILD_DIR"
 
 # make absolute so that we aren't prone to bad cleanup with changed cwd
 BUILD_DIR=$(realpath "$BUILD_DIR")
+
+mkdir -p "${CACHE_DIR}/${APK_ARCH}"
+
+# apk needs an aboslute path
+CACHE_DIR=$(realpath "$CACHE_DIR")
 
 IMAGE_DIR="${BUILD_DIR}/image"
 ROOT_DIR="${BUILD_DIR}/rootfs"

@@ -17,6 +17,12 @@ else
     ROOT_DIR="build"
 fi
 
+if [ -n "$MKROOTFS_CACHE_DIR" ]; then
+    CACHE_DIR="$MKROOTFS_CACHE_DIR"
+else
+    CACHE_DIR="apk-cache"
+fi
+
 TAR_TYPE="ROOTFS"
 
 usage() {
@@ -56,7 +62,8 @@ fi
 APK_ARCH=$(${APK_BIN} --print-arch)
 
 run_apk() {
-    "$APK_BIN" ${APK_REPO} --arch ${APK_ARCH} --root "$@" --no-interactive
+    "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive --arch ${APK_ARCH} \
+        --cache-packages --cache-dir "${CACHE_DIR}/${APK_ARCH}"
 }
 
 while getopts "a:b:B:f:k:o:p:r:h" opt; do
@@ -125,6 +132,11 @@ mkdir -p "${ROOT_DIR}" || die "failed to create directory"
 
 # make absolute so that we aren't prone to bad cleanup with changed cwd
 ROOT_DIR=$(realpath "$ROOT_DIR")
+
+mkdir -p "${CACHE_DIR}/${APK_ARCH}"
+
+# apk needs an aboslute path
+CACHE_DIR=$(realpath "$CACHE_DIR")
 
 if [ -n "$BASE_TAR" ]; then
     ROOT_LOWER="${ROOT_DIR}/lower"
