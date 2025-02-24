@@ -203,8 +203,8 @@ mkfs.${ROOT_FSTYPE} ${ROOT_MKARGS} "${ROOT_DEV}" \
 # mount filesystems
 
 mount "${ROOT_DEV}" "${TARGET_MNT}" || die "failed to mount root"
-mkdir -p "${TARGET_MNT}/boot.mnt" || die "failed to create boot mount"
-mount "${BOOT_DEV}" "${TARGET_MNT}/boot.mnt" || die "failed to mount boot"
+mkdir -p "${TARGET_MNT}/boot" || die "failed to create boot mount"
+mount "${BOOT_DEV}" "${TARGET_MNT}/boot" || die "failed to mount boot"
 
 echo "Mounted '${ROOT_DEV}' at '${TARGET_MNT}'."
 
