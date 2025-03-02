@@ -97,6 +97,7 @@ case "$MKLIVE_BOOTLOADER" in
             aarch64) TARGET_PACKAGES="$TARGET_PACKAGES grub-arm64-efi" ;;
             ppc*) TARGET_PACKAGES="$TARGET_PACKAGES grub-powerpc-ieee1275" ;;
             riscv64) TARGET_PACKAGES="$TARGET_PACKAGES grub-riscv64-efi" ;;
+            loongarch64) TARGET_PACKAGES+="$TARGET_PACKAGES grub-loongarch64-efi" ;;
             x86_64) TARGET_PACKAGES="$TARGET_PACKAGES grub-i386-efi grub-i386-pc grub-x86_64-efi" ;;
             *) die "unknown GRUB target for $APK_ARCH" ;;
         esac
@@ -440,7 +441,7 @@ case "$MKLIVE_BOOTLOADER" in
                 # and install bios
                 chroot "${HOST_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
                 ;;
-            aarch64|riscv64)
+            aarch64|loongarch64|riscv64)
                 generate_efi_limine || die "failed to generate ISO image"
                 ;;
             *) die "Unknown architecture $APK_ARCH for limine" ;;
