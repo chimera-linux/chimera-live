@@ -49,7 +49,6 @@ EOF
 
 APK_BIN="apk"
 FSTYPE="erofs"
-[ -z "$MKLIVE_BOOTLOADER" ] && MKLIVE_BOOTLOADER="grub"
 
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
@@ -87,6 +86,14 @@ case "$FSTYPE" in
     erofs) HOST_PACKAGES="$HOST_PACKAGES erofs-utils" ;;
     *) die "unknown live filesystem (${FSTYPE})" ;;
 esac
+
+# select default bootloader, we don't have grub on loongarch (yet?)
+if [ -z "$MKLIVE_BOOTLOADER" ]; then
+    case "$APK_ARCH" in
+        loongarch64) MKLIVE_BOOTLOADER="limine" ;;
+        *) MKLIVE_BOOTLOADER="grub" ;;
+    esac
+fi
 
 case "$MKLIVE_BOOTLOADER" in
     limine) HOST_PACKAGES="$HOST_PACKAGES limine" ;;
@@ -228,8 +235,10 @@ if [ -z "$KERNFILE" ]; then
 fi
 
 # copy target-specific grub files
-rm -rf "${HOST_DIR}/usr/lib/grub"
-cp -a "${ROOT_DIR}/usr/lib/grub" "${HOST_DIR}/usr/lib"
+if [ "$MKLIVE_BOOTLOADER" = "grub" ]; then
+    rm -rf "${HOST_DIR}/usr/lib/grub"
+    cp -a "${ROOT_DIR}/usr/lib/grub" "${HOST_DIR}/usr/lib"
+fi
 
 # add live-boot initramfs stuff
 msg "Copying live initramfs scripts..."
