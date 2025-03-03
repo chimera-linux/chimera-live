@@ -384,8 +384,8 @@ generate_isohybrid_limine() {
 # is no legacy to worry about, should still support optical media + disk
 generate_efi_limine() {
     generate_iso_base \
-        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
-        -no-emul-boot -boot-load-size 4 -boot-info-table
+        --efi-boot limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
+        --protective-msdos-label
 }
 
 # ppc only, nyaboot + apm hybrid for legacy machines (mac, slof), modern
