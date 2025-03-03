@@ -396,6 +396,20 @@ generate_ppc_nyaboot() {
         tbxi boot/ofboot.b -hfs-bless-by p boot -sysid PPC -chrp-boot-part
 }
 
+prepare_efi_img() {
+    # make an efi image for eltorito (optical media boot)
+    truncate -s 2949120 "${IMAGE_DIR}/efi.img" || die "failed to create EFI image"
+    chroot "${HOST_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/efi.img" > /dev/null \
+        || die "failed to format EFI image"
+    LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mmd -i "/mnt/image/efi.img" EFI EFI/BOOT \
+        || die "failed to populate EFI image"
+    for img in "${IMAGE_DIR}/EFI/BOOT"/*; do
+        img=${img##*/}
+        LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mcopy -i "/mnt/image/efi.img" \
+            "/mnt/image/EFI/BOOT/$img" "::EFI/BOOT/" || die "failed to populate EFI image"
+    done
+}
+
 case "$MKLIVE_BOOTLOADER" in
     limine)
         generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
@@ -420,16 +434,7 @@ case "$MKLIVE_BOOTLOADER" in
                 ;;
         esac
         # make an efi image for eltorito (optical media boot)
-        truncate -s 2949120 "${IMAGE_DIR}/efi.img" || die "failed to create EFI image"
-        chroot "${HOST_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/efi.img" > /dev/null \
-            || die "failed to format EFI image"
-        LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mmd -i "/mnt/image/efi.img" EFI EFI/BOOT \
-            || die "failed to populate EFI image"
-        for img in "${IMAGE_DIR}/EFI/BOOT"/*; do
-            img=${img##*/}
-            LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mcopy -i "/mnt/image/efi.img" \
-                "/mnt/image/EFI/BOOT/$img" "::EFI/BOOT/" || die "failed to populate EFI image"
-        done
+        prepare_efi_img
         # now generate
         case "$APK_ARCH" in
             x86_64)
