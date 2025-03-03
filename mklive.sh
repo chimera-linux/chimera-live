@@ -376,15 +376,15 @@ generate_isohybrid_limine() {
     generate_iso_base \
         -eltorito-boot limine-bios-cd.bin -no-emul-boot -boot-load-size 4 \
         -boot-info-table -hfsplus -apm-block-size 2048 -eltorito-alt-boot \
-        -e limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
+        -e efi.img -efi-boot-part --efi-boot-image \
         --protective-msdos-label --mbr-force-bootable
 }
 
 # just plain uefi support with nothing else, for non-x86 machines where there
 # is no legacy to worry about, should still support optical media + disk
-generate_efi_limine() {
+generate_efi_pure() {
     generate_iso_base \
-        --efi-boot limine-uefi-cd.bin -efi-boot-part --efi-boot-image \
+        --efi-boot efi.img -efi-boot-part --efi-boot-image \
         --protective-msdos-label
 }
 
@@ -420,14 +420,14 @@ case "$MKLIVE_BOOTLOADER" in
                 ;;
         esac
         # make an efi image for eltorito (optical media boot)
-        truncate -s 2949120 "${IMAGE_DIR}/limine-uefi-cd.bin" || die "failed to create EFI image"
-        chroot "${HOST_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/limine-uefi-cd.bin" > /dev/null \
+        truncate -s 2949120 "${IMAGE_DIR}/efi.img" || die "failed to create EFI image"
+        chroot "${HOST_DIR}" /usr/bin/mkfs.vfat -F12 -S 512 "/mnt/image/efi.img" > /dev/null \
             || die "failed to format EFI image"
-        LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mmd -i "/mnt/image/limine-uefi-cd.bin" EFI EFI/BOOT \
+        LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mmd -i "/mnt/image/efi.img" EFI EFI/BOOT \
             || die "failed to populate EFI image"
         for img in "${IMAGE_DIR}/EFI/BOOT"/*; do
             img=${img##*/}
-            LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mcopy -i "/mnt/image/limine-uefi-cd.bin" \
+            LC_CTYPE=C chroot "${HOST_DIR}" /usr/bin/mcopy -i "/mnt/image/efi.img" \
                 "/mnt/image/EFI/BOOT/$img" "::EFI/BOOT/" || die "failed to populate EFI image"
         done
         # now generate
@@ -442,7 +442,7 @@ case "$MKLIVE_BOOTLOADER" in
                 chroot "${HOST_DIR}" /usr/bin/limine bios-install "/mnt/image.iso"
                 ;;
             aarch64|loongarch64|riscv64)
-                generate_efi_limine || die "failed to generate ISO image"
+                generate_efi_pure || die "failed to generate ISO image"
                 ;;
             *) die "Unknown architecture $APK_ARCH for limine" ;;
         esac
