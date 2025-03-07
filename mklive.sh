@@ -87,11 +87,11 @@ case "$FSTYPE" in
     *) die "unknown live filesystem (${FSTYPE})" ;;
 esac
 
-# select default bootloader, we don't have grub on loongarch (yet?)
+# we only use grub on x86 and ppc for now
 if [ -z "$MKLIVE_BOOTLOADER" ]; then
     case "$APK_ARCH" in
-        loongarch64) MKLIVE_BOOTLOADER="limine" ;;
-        *) MKLIVE_BOOTLOADER="grub" ;;
+        x86_64|ppc*) MKLIVE_BOOTLOADER="grub" ;;
+        *) MKLIVE_BOOTLOADER="limine" ;;
     esac
 fi
 
