@@ -419,6 +419,11 @@ prepare_efi_img() {
     done
 }
 
+# grub.cfg for systems that parse this without invoking
+# the actual bootloader, e.g. openpower systems and so on
+mkdir -p "${IMAGE_DIR}/boot/grub"
+generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/boot/grub/grub.cfg"
+
 case "$MKLIVE_BOOTLOADER" in
     limine)
         generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
@@ -480,8 +485,6 @@ case "$MKLIVE_BOOTLOADER" in
         cp "${HOST_DIR}/usr/lib/nyaboot.bin" "${IMAGE_DIR}/boot/yaboot"
         ;;
     grub)
-        mkdir -p "${IMAGE_DIR}/boot/grub"
-        generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/boot/grub/grub.cfg"
         generate_iso_grub || die "failed to generate ISO image"
         ;;
     *)
