@@ -87,10 +87,10 @@ case "$FSTYPE" in
     *) die "unknown live filesystem (${FSTYPE})" ;;
 esac
 
-# we only use grub on x86 and ppc for now
+# we only use grub by default on ppc for now
 if [ -z "$MKLIVE_BOOTLOADER" ]; then
     case "$APK_ARCH" in
-        x86_64|ppc*) MKLIVE_BOOTLOADER="grub" ;;
+        ppc*) MKLIVE_BOOTLOADER="grub" ;;
         *) MKLIVE_BOOTLOADER="limine" ;;
     esac
 fi
