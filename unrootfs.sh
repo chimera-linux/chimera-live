@@ -118,7 +118,7 @@ rm -f "$FSTAB"
 
 msg "Setting up bootloader..."
 
-if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/etc/default/u-boot-device" ]; then
+if [ -n "$BL_DEV" -a -r "${ROOT_DIR}/usr/lib/u-boot/device" ]; then
     "${ROOT_DIR}/usr/bin/install-u-boot" "${BL_DEV}" "${ROOT_DIR}"
 fi
 
