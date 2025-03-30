@@ -78,6 +78,10 @@ while getopts "A:a:c:f:k:o:p:r:s:h" opt; do
     esac
 done
 
+case "$APK_BIN" in
+    /*|./*) APK_BIN=$(realpath "$APK_BIN") ;;
+esac
+
 if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
 fi

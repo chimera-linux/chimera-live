@@ -81,6 +81,10 @@ if ! command -v "$APK_BIN" > /dev/null 2>&1; then
     die "invalid apk command"
 fi
 
+case "$APK_BIN" in
+    /*|./*) APK_BIN=$(realpath "$APK_BIN") ;;
+esac
+
 if [ -z "$APK_ARCH" ]; then
     APK_ARCH=$(${APK_BIN} --print-arch)
 fi
