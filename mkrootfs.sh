@@ -47,10 +47,6 @@ EOF
 APK_BIN="apk"
 BASE_TAR=
 
-if ! command -v "$APK_BIN" > /dev/null 2>&1; then
-    die "invalid apk command"
-fi
-
 TAR=tar
 
 if command -v bsdtar > /dev/null 2>&1; then
@@ -59,14 +55,12 @@ elif ! command -v tar > /dev/null 2>&1; then
     die "tar needs to be installed"
 fi
 
-APK_ARCH=$(${APK_BIN} --print-arch)
-
 run_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive --arch ${APK_ARCH} \
         --cache-packages --cache-dir "${CACHE_DIR}/${APK_ARCH}"
 }
 
-while getopts "a:b:B:f:k:o:p:r:h" opt; do
+while getopts "A:a:b:B:f:k:o:p:r:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         B) BASE_TAR="$OPTARG"; TAR_TYPE="DROOTFS";;
@@ -82,6 +76,14 @@ while getopts "a:b:B:f:k:o:p:r:h" opt; do
         *) usage ;;
     esac
 done
+
+if ! command -v "$APK_BIN" > /dev/null 2>&1; then
+    die "invalid apk command"
+fi
+
+if [ -z "$APK_ARCH" ]; then
+    APK_ARCH=$(${APK_BIN} --print-arch)
+fi
 
 shift $((OPTIND - 1))
 

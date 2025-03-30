@@ -36,6 +36,7 @@ Usage: $PROGNAME [opts] [build_dir]
 Options:
  -A APK       Override the apk tool (default: apk)
  -a ARCH      Generate an image for ARCH (must be runnable on current machine)
+ -c CMDLINE   Extra kernel command line to append.
  -o FILE      Output a FILE (default: chimera-linux-ARCH-YYYYMMDD(-FLAVOR).iso)
  -f FLAVOR    Flavor name to include in default iso name
  -r REPO      Path to apk repository.
@@ -49,12 +50,7 @@ EOF
 
 APK_BIN="apk"
 FSTYPE="erofs"
-
-if ! command -v "$APK_BIN" > /dev/null 2>&1; then
-    die "invalid apk command"
-fi
-
-APK_ARCH=$(${APK_BIN} --print-arch)
+CMDLINE=
 
 run_host_apk() {
     "$APK_BIN" ${APK_REPO} --root "$@" --no-interactive --arch ${APK_ARCH} \
@@ -65,10 +61,11 @@ run_apk() {
     run_host_apk "$@"
 }
 
-while getopts "a:f:k:o:p:r:s:h" opt; do
+while getopts "A:a:c:f:k:o:p:r:s:h" opt; do
     case "$opt" in
         A) APK_BIN="$OPTARG";;
         a) APK_ARCH="$OPTARG";;
+        c) CMDLINE="$OPTARG";;
         f) FLAVOR="-$OPTARG";;
         k) APK_KEYDIR="$OPTARG";;
         K) KERNVER="$OPTARG";;
@@ -80,6 +77,14 @@ while getopts "a:f:k:o:p:r:s:h" opt; do
         *) usage ;;
     esac
 done
+
+if ! command -v "$APK_BIN" > /dev/null 2>&1; then
+    die "invalid apk command"
+fi
+
+if [ -z "$APK_ARCH" ]; then
+    APK_ARCH=$(${APK_BIN} --print-arch)
+fi
 
 case "$FSTYPE" in
     squashfs) HOST_PACKAGES="$HOST_PACKAGES squashfs-tools-ng" ;;
@@ -355,7 +360,7 @@ generate_menu() {
      -e "s|@@KERNFILE@@|${KERNFILE}|g" \
      -e "s|@@KERNVER@@|${KERNVER}|g" \
      -e "s|@@ARCH@@|${APK_ARCH}|g" \
-     -e "s|@@BOOT_CMDLINE@@||g" \
+     -e "s|@@BOOT_CMDLINE@@|${CMDLINE}|g" \
      "$1"
 }
 
