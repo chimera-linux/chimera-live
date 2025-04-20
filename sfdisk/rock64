@@ -1,0 +1,7 @@
+label: gpt
+unit: sectors
+first-lba: 64
+name=spl, start=64, size=16320, type=8DA63339-0007-60C0-C436-083AC8230908
+name=uboot, start=16384, size=16384, type=8DA63339-0007-60C0-C436-083AC8230908
+name=boot, start=32768, size=@BOOT_SIZE@, type=BC13C2FF-59E6-4262-A352-B275FD6F7172, bootable, attrs="LegacyBIOSBootable"
+name=root
