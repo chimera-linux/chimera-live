@@ -90,6 +90,8 @@ case "$APK_ARCH" in
     aarch64)
         make_device rpi "$@"
         make_device pbp "$@"
+        make_device quartzpro64 "$@"
+        make_device rock64 "$@"
         make_device rockpro64 "$@"
         ;;
     riscv64)
