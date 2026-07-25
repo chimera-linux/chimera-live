@@ -119,6 +119,8 @@ case "$MKLIVE_BOOTLOADER" in
         esac
 esac
 
+[ "$APK_ARCH" = "aarch64" ] && HOST_PACKAGES="$HOST_PACKAGES dtc"
+
 shift $((OPTIND - 1))
 
 ISO_VERSION=$(date '+%Y%m%d')
@@ -435,6 +437,30 @@ generate_menu grub/menu.cfg.in > "${IMAGE_DIR}/boot/grub/grub.cfg"
 case "$MKLIVE_BOOTLOADER" in
     limine)
         generate_menu limine/limine.conf.in > "${IMAGE_DIR}/limine.conf"
+        # x1e devicetrees
+        if [ "$APK_ARCH" = "aarch64" ]; then
+            tee -a "${IMAGE_DIR}/limine.conf" >/dev/null <<EOF
+
+/Qualcomm Snapdragon X Series SoC devices
+    comment: Device-trees to use for booting Chimera Linux with kernel ${KERNVER}.
+EOF
+            # TODO: include all dtbloader-supported model dtbs?
+            DTBS=$(find "${ROOT_DIR}/boot/dtbs/dtbs-${KERNVER}"/ -path "*/qcom/x1*.dtb" -not -name "*-el2.dtb")
+            mkdir -p "${LIVE_DIR}/dtbs/qcom"
+            cp $DTBS "${LIVE_DIR}/dtbs/qcom"
+            for DTB in $DTBS; do
+                BOARD="$(chroot "${HOST_DIR}" /usr/bin/dtc -q "/mnt/image/live/dtbs/qcom/${DTB##*/}" | awk -F'"' '/model/ {print $2}')"
+                tee -a "${IMAGE_DIR}/limine.conf" >/dev/null <<EOF
+
+    //${BOARD} (DT)
+    protocol: linux
+    dtb_path: boot():/live/dtbs/qcom/${DTB##*/}
+    kernel_path: boot():/live/${KERNFILE}
+    module_path: boot():/live/initrd
+    cmdline: boot=live live-media=CHIMERA_LIVE init=/usr/bin/init loglevel=4 ${CMDLINE}
+EOF
+            done
+        fi
         # efi executables for usb/disk boot
         mkdir -p "${IMAGE_DIR}/EFI/BOOT"
         case "$APK_ARCH" in
