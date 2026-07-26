@@ -93,8 +93,8 @@ Its basic usage is like this (as root):
 ```
 
 It only takes two optional arguments, `-b IMAGE` and `-p EXTRA_PACKAGES`.
-The `IMAGE` is the supported image type (currently `base` for base console-only
-images and `gnome` for graphical GNOME images). The other argument lets you
+The `IMAGE` is the supported image type (currently, `minimal`, `base` for base console-only
+images, `gnome` for graphical GNOME images and `plasma` for KDE Plasma-based images). The other argument lets you
 install packages in addition to the set provided by `IMAGE`.
 
 You can also pass-through additional arguments to `mklive.sh` by specifying
